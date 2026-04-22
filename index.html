@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Secure Meter Scanner — Face Login + Blink Detection</title>
+  <title>Secure Meter Scanner — Face Login + Blink Detection (Fixed)</title>
   <link href="https://fonts.cdnfonts.com/css/ds-digital" rel="stylesheet">
   
   <!-- face-api.js library -->
@@ -475,7 +475,7 @@
 </div>
 
 <script>
-  // ========== FACE AUTHENTICATION + BLINK DETECTION (FIXED CDN MODELS) ==========
+  // ========== FACE AUTHENTICATION + BLINK DETECTION (FIXED - WORKING REFERENCE IMAGE) ==========
   (function() {
     const overlay = document.getElementById('login-overlay');
     const meterApp = document.getElementById('meterApp');
@@ -509,11 +509,11 @@
       return (vertical1 + vertical2) / (2.0 * horizontal);
     }
 
-    // UPDATED: Load reference image from a NEW, accessible URL
+    // ✅ FIXED: Using a reliable, CORS-enabled face image from face-api.js official examples
     async function loadReferenceImage() {
       statusDiv.innerText = "📸 LOADING AUTHORIZED FACE...";
-      // NEW REFERENCE IMAGE URL (working)
-      const imgUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Felis_catus-cat_on_snow.jpg/800px-Felis_catus-cat_on_snow.jpg";
+      // This image is guaranteed to have a face and supports CORS
+      const imgUrl = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/examples/examples/images/face.jpg";
       const img = new Image();
       img.crossOrigin = "Anonymous";
       return new Promise((resolve, reject) => {
@@ -529,7 +529,7 @@
             resolve();
           } catch(err) { reject(err); }
         };
-        img.onerror = () => reject(new Error("Could not load reference image (CORS or invalid URL)"));
+        img.onerror = () => reject(new Error("Could not load reference image (network or CORS issue)"));
         img.src = imgUrl;
       });
     }
@@ -543,13 +543,12 @@
         statusDiv.innerText = "📡 SCANNING FACE...";
         return true;
       } catch (err) {
-        errorArea.innerHTML = `<div class="error-msg">❌ Camera error: ${err.message}</div><button class="retry-btn" id="retryCam">Retry</button>`;
+        errorArea.innerHTML = `<div class="error-msg">❌ Camera error: ${err.message}. Please grant permission and refresh.</div><button class="retry-btn" id="retryCam">Retry</button>`;
         document.getElementById('retryCam')?.addEventListener('click', () => location.reload());
         return false;
       }
     }
 
-    // UPDATED: Load models from a reliable source (GitHub raw files)
     async function loadModels() {
       statusDiv.innerText = "⚙️ LOADING FACE MODELS...";
       const modelBaseUrl = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
