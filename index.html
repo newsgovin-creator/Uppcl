@@ -1,14 +1,9 @@
-चलो भाई, बिल्कुल सही। अब मैं समझ गया। तुम्हें कोई अपलोड बटन नहीं चाहिए, न ही कोई फाइल पिकर। तुम पहले से ही अपनी फोटो (authorized_face.jpg) को उसी फोल्डर में रखोगे जहाँ यह HTML फाइल होगी। बस कैमरा खुले, उस फोटो से चेहरा मैच हो, 3 बार पलक झपकाओ और मीटर खुल जाए।
-
-ये रहा तुम्हारा असली कोड – बिना किसी अपलोड बटन के, बिना किसी एक्स्ट्रा चीज़ के। बस कॉपी करके अपनी Gitee वाली फाइल में पेस्ट करो, और साथ में अपनी फोटो authorized_face.jpg नाम से अपलोड कर दो।
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Secure Meter — Face + Blink Auth (Local Reference)</title>
+  <title>Secure Meter — Face + Blink Auth</title>
   <link href="https://fonts.cdnfonts.com/css/ds-digital" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <style>
@@ -19,7 +14,7 @@
       font-family: 'DS-Digital', monospace;
       overflow-x: hidden;
     }
-    /* Login Overlay - pure black with camera */
+    /* LOGIN OVERLAY — पूरा काला, कैमरा दिखेगा */
     #login-overlay {
       position: fixed;
       top: 0;
@@ -66,9 +61,9 @@
     .blink-counter { color: #ffaa44; font-size: 1rem; margin-top: 8px; }
     .instruction { color: #aaa; font-size: 0.85rem; margin-top: 12px; border-top: 1px dashed #2a9d8f; padding-top: 10px; }
     .error-msg { color: #ff5e5e; font-size: 0.85rem; margin-top: 10px; }
-    /* Original Meter App (hidden initially) */
+    /* ORIGINAL METER APP (छिपा हुआ, लॉगिन के बाद दिखेगा) */
     #meterApp { display: none; width: 100%; background: #000; }
-    /* ----- ORIGINAL METER STYLES (100% unchanged) ----- */
+    /* === ORIGINAL METER STYLES (बिना बदलाव के) === */
     :root { --wrap-width: 100%; --zoom: 1; --rotation: 0deg; --tilt-x: 0deg; --tilt-y: 0deg; --font-weight: 700; --opacity: 0.85; --glass-opacity: 0.3; --dirt-opacity: 0.2; --moire-opacity: 0.1; --scanner-darkness: 0.7; --scanner-glow: 0.1; }
     #svgFilters { height: 0; width: 0; position: absolute; visibility: hidden; }
     .col { width: 100%; max-width: 600px; }
@@ -116,7 +111,7 @@
 </head>
 <body>
 
-<!-- FACE AUTHENTICATION LAYER (camera + blink) -->
+<!-- FACE AUTHENTICATION LAYER (कैमरा + ब्लिंक) -->
 <div id="login-overlay">
   <div class="camera-container">
     <video id="video-feed" autoplay muted playsinline></video>
@@ -129,7 +124,7 @@
   </div>
 </div>
 
-<!-- ORIGINAL METER APP (hidden until successful auth) -->
+<!-- ORIGINAL METER APP (लॉगिन के बाद दिखेगा) -->
 <div id="meterApp">
   <svg id="svgFilters">
     <filter id="noiseFilter">
@@ -194,7 +189,7 @@
 </div>
 
 <script>
-  // ========== FACE AUTHENTICATION - NO UPLOAD, JUST LOCAL FILE ==========
+  // ========== FACE AUTHENTICATION (बिना अपलोड बटन के, सिर्फ एक URL बदलना है) ==========
   (function() {
     const overlay = document.getElementById('login-overlay');
     const meterApp = document.getElementById('meterApp');
@@ -211,7 +206,6 @@
     let eyesClosedPrev = false;
     let faceMatched = false;
     let authSuccess = false;
-    let modelsReady = false;
 
     const EAR_THRESHOLD = 0.2;
 
@@ -225,6 +219,10 @@
       return (vertical1 + vertical2) / (2.0 * horizontal);
     }
 
+    // ⚠️⚠️⚠️ बस यहाँ अपनी फोटो की लिंक डालें ⚠️⚠️⚠️
+    // उदाहरण: "authorized_face.jpg"  या  "https://example.com/myface.jpg"
+    const REFERENCE_IMAGE_URL = "https://img.sanishtech.com/u/8705beffe38ca2a7608c3b6858e68169.jpg";   // <--- यहाँ बदलो
+
     async function loadModels() {
       statusDiv.innerText = "⚙️ LOADING FACE MODELS...";
       const modelBaseUrl = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
@@ -232,9 +230,8 @@
         await faceapi.nets.tinyFaceDetector.loadFromUri(modelBaseUrl);
         await faceapi.nets.faceLandmark68Net.loadFromUri(modelBaseUrl);
         await faceapi.nets.faceRecognitionNet.loadFromUri(modelBaseUrl);
-        modelsReady = true;
         statusDiv.innerText = "✅ MODELS READY";
-        instructionSpan.innerHTML = "📸 Loading reference image (authorized_face.jpg)...";
+        instructionSpan.innerHTML = "📸 Loading reference image...";
         return true;
       } catch (err) {
         errorArea.innerHTML = `<div class="error-msg">❌ Model load failed: ${err.message}. Check internet.</div>`;
@@ -242,18 +239,16 @@
       }
     }
 
-    // Load reference image from same directory (relative path)
     async function loadReferenceImage() {
       statusDiv.innerText = "📸 LOADING AUTHORIZED FACE...";
-      const imgUrl = "authorized_face.jpg";   // <-- यही तुम्हारी फोटो है, इसी नाम से रखना
       const img = new Image();
-      img.crossOrigin = "Anonymous"; // same-origin, no CORS issue
+      img.crossOrigin = "Anonymous"; // अगर same domain पर हो तो भी ठीक
       return new Promise((resolve, reject) => {
         img.onload = async () => {
           try {
             const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
             if (!detection) {
-              reject(new Error("No face found in authorized_face.jpg. Use a clear front face photo."));
+              reject(new Error("No face found in reference image. Use a clear front face photo."));
               return;
             }
             referenceDescriptor = detection.descriptor;
@@ -262,8 +257,8 @@
             resolve();
           } catch(err) { reject(err); }
         };
-        img.onerror = () => reject(new Error("Could not load 'authorized_face.jpg'. Make sure the file exists in the same folder as this HTML."));
-        img.src = imgUrl;
+        img.onerror = () => reject(new Error(`Could not load image: ${REFERENCE_IMAGE_URL}. Make sure the URL is correct and image is accessible (CORS allowed if external).`));
+        img.src = REFERENCE_IMAGE_URL;
       });
     }
 
@@ -315,7 +310,7 @@
             }
             return;
           }
-          // Face matched
+          // Face matched!
           if (!faceMatched) {
             faceMatched = true;
             blinkCount = 0;
@@ -367,6 +362,7 @@
       blinkCounterSpan.style.color = faceMatched ? "#aaffaa" : "#ffaa44";
     }
 
+    // MAIN
     (async () => {
       const modelOk = await loadModels();
       if (!modelOk) return;
@@ -384,7 +380,7 @@
   })();
 </script>
 
-<!-- ========== ORIGINAL METER JAVASCRIPT (100% UNMODIFIED) ========== -->
+<!-- ========== ORIGINAL METER JAVASCRIPT (100% बिना बदलाव के) ========== -->
 <script>
   (function() {
     const wrap = document.getElementById('meterWrap');
@@ -676,14 +672,3 @@
 </script>
 </body>
 </html>
-```
-
-🔧 अब तुम्हें सिर्फ यह करना है:
-
-1. अपनी अधिकृत फोटो (जिस चेहरे को लॉगिन देना है) को authorized_face.jpg नाम से सेव करो।
-2. इस HTML फाइल के साथ उसी फोल्डर में authorized_face.jpg अपलोड करो।
-3. HTML फाइल को Gitee पर ओपन करो।
-
-बस। कोई अपलोड बटन नहीं, कोई फाइल पिकर नहीं। कैमरा अपने आप खुलेगा, चेहरा मैच करेगा, 3 बार पलक झपकाओगे तो मीटर खुल जाएगा।
-
-ध्यान दें: अगर फोटो का नाम अलग रखना है तो loadReferenceImage() फंक्शन के अंदर imgUrl = "your_photo_name.jpg" बदल देना।
