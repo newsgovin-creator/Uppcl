@@ -1,0 +1,993 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secure Meter Scanner — Face Login + Blink Detection</title>
+  <link href="https://fonts.cdnfonts.com/css/ds-digital" rel="stylesheet">
+  
+  <!-- face-api.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  
+  <style>
+    /* ----- GLOBAL RESET / BASE ----- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      min-height: 100vh;
+      font-family: 'DS-Digital', monospace;
+      overflow-x: hidden;
+    }
+
+    /* ----- LOGIN OVERLAY (Face + Blink) ----- */
+    #login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', 'DS-Digital', monospace;
+      backdrop-filter: blur(2px);
+      transition: opacity 0.5s ease;
+    }
+
+    .camera-container {
+      position: relative;
+      width: 90%;
+      max-width: 500px;
+      aspect-ratio: 4 / 3;
+      background: #111;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 2px solid #2a9d8f;
+      box-shadow: 0 0 30px rgba(42,157,143,0.3);
+      margin-bottom: 24px;
+    }
+
+    #video-feed {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    .status-panel {
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      padding: 18px 28px;
+      border-radius: 48px;
+      text-align: center;
+      max-width: 85%;
+      border: 1px solid #2a9d8f;
+      box-shadow: 0 0 12px rgba(0,255,170,0.2);
+    }
+
+    .status-text {
+      color: #0f0;
+      font-size: 1.3rem;
+      letter-spacing: 2px;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-family: monospace;
+      text-shadow: 0 0 5px #0f0;
+    }
+
+    .blink-counter {
+      color: #ffaa44;
+      font-size: 1rem;
+      margin-top: 8px;
+      font-family: monospace;
+    }
+
+    .instruction {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-top: 12px;
+      border-top: 1px dashed #2a9d8f;
+      padding-top: 10px;
+    }
+
+    .error-msg {
+      color: #ff5e5e;
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+
+    .retry-btn {
+      background: #2a9d8f;
+      border: none;
+      color: black;
+      font-weight: bold;
+      padding: 8px 18px;
+      border-radius: 40px;
+      margin-top: 12px;
+      cursor: pointer;
+      font-family: monospace;
+    }
+
+    /* loading spinner */
+    .loader {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #2a9d8f;
+      border-top: 4px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ----- ORIGINAL METER CONTAINER (hidden until auth) ----- */
+    #meterApp {
+      display: none;
+      width: 100%;
+      background: #000;
+    }
+
+    /* === ORIGINAL METER STYLES - 100% preserved === */
+    :root {
+      --wrap-width: 100%;
+      --zoom: 1;
+      --rotation: 0deg;
+      --tilt-x: 0deg;
+      --tilt-y: 0deg;
+      --font-weight: 700;
+      --opacity: 0.85;
+      --glass-opacity: 0.3;
+      --dirt-opacity: 0.2;
+      --moire-opacity: 0.1;
+      --scanner-darkness: 0.7;
+      --scanner-glow: 0.1;
+    }
+    #svgFilters { height: 0; width: 0; position: absolute; visibility: hidden; }
+
+    .col { width: 100%; max-width: 600px; }
+    
+    .meter-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      aspect-ratio: 1 / 1;
+      border: 2px solid #333;
+      border-radius: 10px;
+      box-shadow: 0 0 25px #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: #000;
+      perspective: 800px;
+    }
+    
+    .meter-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      object-fit: cover;
+      transform: scale(var(--zoom));
+      transform-origin: center;
+      z-index: 1;
+      transition: filter 0.3s ease;
+    }
+    
+    /* Layers */
+    .dirt-overlay, .glass-overlay, .moire-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    
+    .dirt-overlay {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+      opacity: var(--dirt-opacity);
+      mix-blend-mode: soft-light;
+      z-index: 5;
+    }
+
+    .glass-overlay {
+      background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 100%);
+      opacity: var(--glass-opacity);
+      mix-blend-mode: soft-light;
+      z-index: 6;
+    }
+
+    .moire-overlay {
+      background: repeating-radial-gradient(circle at 50% 50%, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.2) 3px, transparent 4px);
+      background-size: 100% 100%;
+      opacity: var(--moire-opacity);
+      mix-blend-mode: multiply;
+      z-index: 7;
+    }
+
+    .reading-container {
+      position: absolute;
+      z-index: 100; 
+      cursor: grab;
+      user-select: none;
+      transform-style: preserve-3d;
+      transform: rotate(var(--rotation)) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(1px);
+      box-shadow: 0 0 0 0 rgba(0,0,0,0);
+      transition: box-shadow 0.2s ease, background 0.2s ease;
+    }
+    
+    .scanner-mode-active {
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, var(--scanner-darkness));
+      background: rgba(255, 255, 255, var(--scanner-glow));
+      outline: 2px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    @keyframes ac-flicker {
+      0% { opacity: var(--opacity); }
+      25% { opacity: calc(var(--opacity) * 0.96); }
+      50% { opacity: calc(var(--opacity) * 0.99); }
+      75% { opacity: calc(var(--opacity) * 0.94); }
+      100% { opacity: var(--opacity); }
+    }
+    
+    .flicker-active {
+      animation: ac-flicker 0.06s infinite alternate; 
+    }
+    
+    /* FLOATING MIC */
+    .floating-mic {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #333;
+      border: 2px solid #555;
+      color: white;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 9999;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); transform: scale(1); }
+      50% { transform: scale(1.1); }
+      70% { box-shadow: 0 0 0 15px rgba(0, 255, 0, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); transform: scale(1); }
+    }
+    
+    .mic-active {
+      background-color: #00cc00 !important;
+      border-color: #00ff00 !important;
+      animation: pulse-green 1.5s infinite;
+    }
+
+    .reading {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 6px 10px;
+      color: #000000;
+      font-family: 'DS-Digital', monospace;
+      font-weight: var(--font-weight);
+      line-height: 1;
+      white-space: nowrap;
+      opacity: var(--opacity);
+    }
+    .reading .value {
+      font-size: clamp(24px, 6vw, 36px);
+      position: relative;
+      z-index: 2;
+    }
+    .reading .ghost {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      color: #000;
+      opacity: 0.08;
+      z-index: 1;
+      filter: blur(0.5px);
+      user-select: none;
+      pointer-events: none;
+    }
+    .unit {
+      position: absolute;
+      z-index: 100;
+      cursor: grab;
+      user-select: none;
+      color: #000000;
+      font-family: monospace;
+      font-weight: var(--font-weight);
+      line-height: 1;
+      transform: rotate(var(--rotation)) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(1px);
+      opacity: var(--opacity);
+      padding: 4px 8px;
+      font-size: clamp(12px, 4vw, 16px);
+    }
+    
+    .resizer {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      right: -10px;
+      bottom: -10px;
+      background: transparent;
+      cursor: se-resize;
+      z-index: 101;
+    }
+    
+    .merged { mix-blend-mode: multiply; }
+    .noise-active { filter: url(#noiseFilter); }
+    .camouflaged { filter: blur(0.6px); }
+    .merged.noise-active.camouflaged { filter: url(#noiseFilter) blur(0.6px); }
+
+    .image-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: center; }
+    .gallery-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
+    .gallery-thumb:hover, .gallery-thumb.selected { border-color: #0f0; }
+    
+    .panel { background: #071322; padding: 12px; border-radius: 10px; width: 100%; max-width: 600px; box-shadow: 0 8px 28px rgba(0,0,0,0.6); margin-top: 20px; }
+    .panel h3 { margin: 0 0 8px 0; font-size: 18px; color: #dfffe3; }
+    .row { margin: 8px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    label { font-size: 13px; color: #bcd8c6; flex: 1; }
+    input, button { font-size: 14px; padding: 8px; border-radius: 4px; border: 1px solid #333; background: #051018; color: #fff; }
+    button { background: #39c28a; color: #04211a; cursor: pointer; border: none; }
+    button.ghost { background: transparent; color: #9ebaa7; border: 1px solid rgba(255,255,255,0.1); }
+    
+    button.scanner-btn { background: #4285f4; color: white; border: none; }
+    button.scanner-btn.active { background: #ea4335; box-shadow: 0 0 10px #ea4335; }
+
+    button.danger { background: #ff4444; color: white; border: none; font-weight: bold; width: 100%; margin-bottom: 10px; }
+    button.danger:hover { background: #cc0000; }
+    
+    button.mic-action-btn { background: #333; color: white; border: 1px solid #555; width: 100%; margin-bottom: 5px; font-weight: bold; }
+
+    .slider { width: 100%; height: 6px; -webkit-appearance: none; background: #333; border-radius: 3px; }
+    .slider::-webkit-slider-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; -webkit-appearance: none; cursor: pointer; }
+    .slider-value { color: #fff; min-width: 50px; text-align: right; font-size: 12px; }
+    
+    .section-title { width: 100%; color: #0f0; font-size: 12px; margin-top: 10px; border-bottom: 1px solid #333; padding-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+<!-- FACE AUTHENTICATION LAYER (with blink liveness) -->
+<div id="login-overlay">
+  <div class="camera-container">
+    <video id="video-feed" autoplay muted playsinline></video>
+  </div>
+  <div class="status-panel">
+    <div class="status-text" id="auth-status">🔐 INITIALIZING SECURE CAMERA...</div>
+    <div class="blink-counter" id="blink-counter-text">👁️ BLINKS: 0 / 3</div>
+    <div class="instruction" id="instruction-text">✔️ Face recognition active. After face match, blink 3 times.</div>
+    <div id="error-area"></div>
+  </div>
+</div>
+
+<!-- ORIGINAL METER SCANNER APP (hidden until authentication) -->
+<div id="meterApp">
+  <!-- SVG filters (original) -->
+  <svg id="svgFilters">
+    <filter id="noiseFilter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0"/>
+      <feComposite operator="in" in2="SourceGraphic" result="monoNoise"/>
+      <feBlend mode="multiply" in="monoNoise" in2="SourceGraphic" />
+    </filter>
+  </svg>
+
+  <!-- Floating Mic -->
+  <div id="floatMic" class="floating-mic">🎤</div>
+
+  <div class="col">
+    <div class="meter-wrap" id="meterWrap">
+      <img class="meter-img" id="meterImg" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjMdcxhtMJaGXEUtZdMzMCDwfd1m5MoSyaGju7TLH9T3siF3_nbGguy9BW4td0_5nipYRL3WWQAsbhfinurwkZhRcPGiF2bllL7AGzk7hZRIvAVYUUhTl6eMMsXQIoHTbAtHp1nVx9bEosmnm-3RxM7N4ibAhSLfNNJYydIALCOqJCJ27AnCUXMSi3SM9n2/s320/1001154444.jpg" alt="Meter">
+      
+      <div class="dirt-overlay"></div>
+      <div class="glass-overlay"></div>
+      <div class="moire-overlay"></div>
+
+      <div id="readingGroup" class="reading-container" style="left: 70%; top: 45%; width: 33%; height: 9%;">
+        <div id="reading" class="reading merged camouflaged noise-active">
+          <div class="ghost" id="ghostDisplay">888888</div>
+          <div class="value" id="display">000339</div>
+        </div>
+        <div class="resizer" id="resizer"></div>
+      </div>
+
+      <div class="unit merged camouflaged noise-active" id="unit" style="left: 70%; top: 50%;">kWh</div>
+    </div>
+
+    <div style="margin-top: 10px; display: flex; gap: 8px; justify-content: center;">
+      <button id="exportBtn">Download Image</button>
+    </div>
+    
+    <div class="image-gallery" id="imageGallery"></div>
+  </div>
+
+  <div class="panel">
+    <button id="panelMicBtn" class="mic-action-btn">🎤 Voice Control (ON/OFF)</button>
+    <button id="masterResetBtn" class="danger">⚙️ Reset All Settings</button>
+    
+    <div class="section-title">Google Scanner Effect</div>
+    <div class="row">
+        <label>Scanner Mode</label>
+        <button id="scannerBtn" class="scanner-btn" style="width: auto;">Scanner: OFF</button>
+    </div>
+    <div class="row">
+        <label>Darkness</label>
+        <input id="scannerDarkRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.7" />
+        <span class="slider-value" id="scannerDarkValue">70%</span>
+    </div>
+    
+    <h3>Advanced Settings</h3>
+    <div class="row">
+      <label>Reading Text</label>
+      <input type="text" id="textInput" placeholder="000339 kWh" />
+    </div>
+
+    <div class="section-title">Environment</div>
+    <div class="row"><label>Moiré Pattern</label><input id="moireRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.10" /><span class="slider-value" id="moireValue">10%</span></div>
+    <div class="row"><label>Glass Reflection</label><input id="glassRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.3" /><span class="slider-value" id="glassValue">30%</span></div>
+    <div class="row"><label>Dust & Scratches</label><input id="dirtRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.2" /><span class="slider-value" id="dirtValue">20%</span></div>
+
+    <div class="section-title">Size & Position</div>
+    <div class="row"><label>Font Size</label><input id="fontRange" class="slider" type="range" min="10" max="100" value="48" /><span class="slider-value" id="fontValue">48px</span></div>
+    <div class="row"><label>Unit Size</label><input id="unitFontRange" class="slider" type="range" min="8" max="50" value="18" /><span class="slider-value" id="unitFontValue">18px</span></div>
+    <div class="row"><label>Unit X Offset</label><input id="unitXRange" class="slider" type="range" min="0" max="100" value="70" /></div>
+    <div class="row"><label>Unit Y Offset</label><input id="unitYRange" class="slider" type="range" min="0" max="100" value="50" /></div>
+
+    <div class="section-title">Realism</div>
+    <div class="row"><label>Rotation</label><input id="rotationInput" type="number" min="-180" max="180" value="0" /></div>
+    <div class="row"><label>Tilt X</label><input id="tiltXRange" class="slider" type="range" min="-60" max="60" value="0" /><span class="slider-value" id="tiltXValue">0°</span></div>
+    <div class="row"><label>Tilt Y</label><input id="tiltYRange" class="slider" type="range" min="-60" max="60" value="0" /><span class="slider-value" id="tiltYValue">0°</span></div>
+    
+    <div class="row"><label>Flicker</label><button id="flickerBtn" class="ghost" style="width:auto; color: #ffeb3b; border-color: #ffeb3b;">Flicker: ON</button></div>
+    
+    <div class="row"><label>Noise</label><button id="noiseBtn" class="ghost" style="width:auto;">Noise: ON</button></div>
+    <div class="row"><label>Ghost (8888)</label><button id="ghostBtn" class="ghost" style="width:auto;">Ghost: ON</button></div>
+    <div class="row"><label>Blur</label><input id="edgeBlurRange" class="slider" type="range" min="0" max="3" step="0.1" value="0.6" /><span class="slider-value" id="edgeBlurValue">0.6px</span></div>
+    
+    <div class="section-title">Appearance</div>
+    <div class="row"><label>Boldness</label><input id="fontWeightRange" class="slider" type="range" min="100" max="900" step="100" value="700" /><span class="slider-value" id="fontWeightValue">700</span></div>
+    <div class="row"><label>Opacity</label><input id="opacityRange" class="slider" type="range" min="0.1" max="1" step="0.05" value="0.85" /><span class="slider-value" id="opacityValue">85%</span></div>
+    <div class="row"><label>Color</label><input id="colorInput" type="color" value="#000000" /></div>
+
+    <div class="section-title">Image</div>
+    <div class="row"><label>Image Zoom</label><input id="zoomRange" class="slider" type="range" min="0.5" max="2" step="0.1" value="1" /></div>
+    <div class="row"><input type="url" id="imageInput" placeholder="New Image URL" /><button id="addImageBtn">Add</button></div>
+  </div>
+</div>
+
+<script>
+  // ========== FACE AUTHENTICATION + BLINK DETECTION (FIXED CDN MODELS) ==========
+  (function() {
+    const overlay = document.getElementById('login-overlay');
+    const meterApp = document.getElementById('meterApp');
+    const video = document.getElementById('video-feed');
+    const statusDiv = document.getElementById('auth-status');
+    const blinkCounterSpan = document.getElementById('blink-counter-text');
+    const instructionSpan = document.getElementById('instruction-text');
+    const errorArea = document.getElementById('error-area');
+
+    let referenceDescriptor = null;
+    let detectionInterval = null;
+    let stream = null;
+    let blinkCount = 0;
+    let eyesClosedPrev = false;
+    let faceMatched = false;
+    let authSuccess = false;
+    
+    const EAR_THRESHOLD = 0.2;
+    
+    function getEyeAspectRatio(landmarks, eyeIndices) {
+      const p1 = landmarks[eyeIndices[0]];
+      const p2 = landmarks[eyeIndices[1]];
+      const p3 = landmarks[eyeIndices[2]];
+      const p4 = landmarks[eyeIndices[3]];
+      const p5 = landmarks[eyeIndices[4]];
+      const p6 = landmarks[eyeIndices[5]];
+      const vertical1 = Math.hypot(p2.x - p6.x, p2.y - p6.y);
+      const vertical2 = Math.hypot(p3.x - p5.x, p3.y - p5.y);
+      const horizontal = Math.hypot(p1.x - p4.x, p1.y - p4.y);
+      if (horizontal === 0) return 0.5;
+      return (vertical1 + vertical2) / (2.0 * horizontal);
+    }
+
+    // UPDATED: Load reference image from a NEW, accessible URL
+    async function loadReferenceImage() {
+      statusDiv.innerText = "📸 LOADING AUTHORIZED FACE...";
+      // NEW REFERENCE IMAGE URL (working)
+      const imgUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Felis_catus-cat_on_snow.jpg/800px-Felis_catus-cat_on_snow.jpg";
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      return new Promise((resolve, reject) => {
+        img.onload = async () => {
+          try {
+            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+            if (!detection) {
+              reject(new Error("No face found in reference image. Please use a clear face image."));
+              return;
+            }
+            referenceDescriptor = detection.descriptor;
+            statusDiv.innerText = "✅ REFERENCE FACE LOADED";
+            resolve();
+          } catch(err) { reject(err); }
+        };
+        img.onerror = () => reject(new Error("Could not load reference image (CORS or invalid URL)"));
+        img.src = imgUrl;
+      });
+    }
+    
+    async function startWebcam() {
+      statusDiv.innerText = "🎥 REQUESTING CAMERA ACCESS...";
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        await video.play();
+        statusDiv.innerText = "📡 SCANNING FACE...";
+        return true;
+      } catch (err) {
+        errorArea.innerHTML = `<div class="error-msg">❌ Camera error: ${err.message}</div><button class="retry-btn" id="retryCam">Retry</button>`;
+        document.getElementById('retryCam')?.addEventListener('click', () => location.reload());
+        return false;
+      }
+    }
+
+    // UPDATED: Load models from a reliable source (GitHub raw files)
+    async function loadModels() {
+      statusDiv.innerText = "⚙️ LOADING FACE MODELS...";
+      const modelBaseUrl = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+      try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(modelBaseUrl);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(modelBaseUrl);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(modelBaseUrl);
+        statusDiv.innerText = "🔐 MODELS READY";
+        return true;
+      } catch (error) {
+        console.error("Model loading error:", error);
+        errorArea.innerHTML = `<div class="error-msg">⚠️ Failed to load AI models: ${error.message}. Check internet and reload.</div><button class="retry-btn" id="hardRetry">Retry</button>`;
+        document.getElementById('hardRetry')?.addEventListener('click', () => location.reload());
+        return false;
+      }
+    }
+
+    async function startFaceDetection() {
+      if (!referenceDescriptor) {
+        statusDiv.innerText = "⚠️ Reference missing. Reloading...";
+        return;
+      }
+      
+      detectionInterval = setInterval(async () => {
+        if (authSuccess) return;
+        if (!video || video.readyState !== 4) return;
+        
+        try {
+          const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+          
+          if (!detection) {
+            if (faceMatched) {
+              faceMatched = false;
+              blinkCount = 0;
+              updateBlinkDisplay();
+              instructionSpan.innerHTML = "⚠️ Face lost. Please re-center face.";
+              statusDiv.innerText = "🔍 LOOKING FOR FACE...";
+            }
+            return;
+          }
+          
+          const distance = faceapi.euclideanDistance(detection.descriptor, referenceDescriptor);
+          const isMatch = distance < 0.6;
+          
+          if (!isMatch) {
+            if (faceMatched) {
+              faceMatched = false;
+              blinkCount = 0;
+              updateBlinkDisplay();
+              statusDiv.innerText = "❌ FACE NOT RECOGNIZED";
+              instructionSpan.innerHTML = "Access denied: face does not match. Try again.";
+            } else {
+              statusDiv.innerText = "🚫 UNAUTHORIZED FACE";
+            }
+            return;
+          }
+          
+          // Face matched!
+          if (!faceMatched) {
+            faceMatched = true;
+            blinkCount = 0;
+            updateBlinkDisplay();
+            statusDiv.innerText = "✅ FACE VERIFIED! NOW BLINK 3 TIMES";
+            instructionSpan.innerHTML = "👁️ Blink slowly 3 times to confirm liveness.";
+          }
+          
+          // Blink detection
+          const landmarks = detection.landmarks;
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
+          const leftEAR = getEyeAspectRatio(leftEye, [0,1,2,3,4,5]);
+          const rightEAR = getEyeAspectRatio(rightEye, [0,1,2,3,4,5]);
+          const avgEAR = (leftEAR + rightEAR) / 2;
+          
+          const isEyesClosed = avgEAR < EAR_THRESHOLD;
+          
+          if (isEyesClosed && !eyesClosedPrev) {
+            if (faceMatched && blinkCount < 3) {
+              blinkCount++;
+              updateBlinkDisplay();
+              statusDiv.innerText = `✅ FACE OK | BLINK ${blinkCount}/3`;
+              if (blinkCount === 3) {
+                authSuccess = true;
+                clearInterval(detectionInterval);
+                if (stream) {
+                  stream.getTracks().forEach(track => track.stop());
+                }
+                overlay.style.opacity = "0";
+                setTimeout(() => {
+                  overlay.style.display = "none";
+                  meterApp.style.display = "block";
+                }, 300);
+              }
+            }
+          }
+          eyesClosedPrev = isEyesClosed;
+          
+          if (blinkCount >= 3 && !authSuccess) {
+            authSuccess = true;
+            clearInterval(detectionInterval);
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            overlay.style.opacity = "0";
+            setTimeout(() => {
+              overlay.style.display = "none";
+              meterApp.style.display = "block";
+            }, 300);
+          }
+        } catch(err) {
+          console.warn("Detection error", err);
+        }
+      }, 120);
+    }
+    
+    function updateBlinkDisplay() {
+      blinkCounterSpan.innerHTML = `👁️ BLINKS: ${blinkCount} / 3`;
+      if (faceMatched) {
+        blinkCounterSpan.style.color = "#aaffaa";
+      } else {
+        blinkCounterSpan.style.color = "#ffaa44";
+      }
+    }
+    
+    async function initAuth() {
+      const modelsLoaded = await loadModels();
+      if (!modelsLoaded) return;
+      try {
+        await loadReferenceImage();
+        const camOk = await startWebcam();
+        if (camOk) {
+          await startFaceDetection();
+        } else {
+          statusDiv.innerText = "📷 CAMERA FAILED";
+        }
+      } catch(err) {
+        console.error(err);
+        errorArea.innerHTML = `<div class="error-msg">⚠️ Face auth init failed: ${err.message}. Please refresh.</div><button class="retry-btn" id="hardRetry">Retry</button>`;
+        document.getElementById('hardRetry')?.addEventListener('click', () => location.reload());
+      }
+    }
+    
+    initAuth();
+  })();
+</script>
+
+<!-- ========== ORIGINAL FULL JAVASCRIPT (100% unchanged) ========== -->
+<script>
+  (function() {
+    const wrap = document.getElementById('meterWrap');
+    const readingGroup = document.getElementById('readingGroup');
+    const reading = document.getElementById('reading');
+    const display = document.getElementById('display');
+    const ghostDisplay = document.getElementById('ghostDisplay');
+    const unitElem = document.getElementById('unit');
+    const resizer = document.getElementById('resizer');
+    const meterImg = document.getElementById('meterImg');
+    const textInput = document.getElementById('textInput');
+    const floatMic = document.getElementById('floatMic');
+    const panelMicBtn = document.getElementById('panelMicBtn');
+    const fontRange = document.getElementById('fontRange');
+    const unitFontRange = document.getElementById('unitFontRange');
+    const unitXRange = document.getElementById('unitXRange');
+    const unitYRange = document.getElementById('unitYRange');
+    const fontWeightRange = document.getElementById('fontWeightRange');
+    const opacityRange = document.getElementById('opacityRange');
+    const rotationInput = document.getElementById('rotationInput');
+    const tiltXRange = document.getElementById('tiltXRange');
+    const tiltYRange = document.getElementById('tiltYRange');
+    const edgeBlurRange = document.getElementById('edgeBlurRange');
+    const zoomRange = document.getElementById('zoomRange');
+    const colorInput = document.getElementById('colorInput');
+    const glassRange = document.getElementById('glassRange');
+    const dirtRange = document.getElementById('dirtRange');
+    const moireRange = document.getElementById('moireRange');
+    const noiseBtn = document.getElementById('noiseBtn');
+    const ghostBtn = document.getElementById('ghostBtn');
+    const flickerBtn = document.getElementById('flickerBtn');
+    const masterResetBtn = document.getElementById('masterResetBtn'); 
+    const exportBtn = document.getElementById('exportBtn');
+    const addImageBtn = document.getElementById('addImageBtn');
+    const scannerBtn = document.getElementById('scannerBtn');
+    const scannerDarkRange = document.getElementById('scannerDarkRange');
+    const scannerDarkValue = document.getElementById('scannerDarkValue');
+
+    const defaults = {
+      x: 70, y: 45, w: 33, h: 9,
+      font: 36, unitFont: 16, fontWeight: 700,
+      unitX: 70, unitY: 50, color: '#000000', text: '000339 kWh',
+      rotation: 0, tiltX: 0, tiltY: 0, opacity: 0.85, edgeBlur: 0.6,
+      glassOpacity: 0.3, dirtOpacity: 0.2, moireOpacity: 0.10,
+      noise: true, ghost: true, flicker: true, zoom: 1,
+      scannerMode: false, scannerDarkness: 0.7
+    };
+
+    let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
+
+    const meterImages = [
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjMdcxhtMJaGXEUtZdMzMCDwfd1m5MoSyaGju7TLH9T3siF3_nbGguy9BW4td0_5nipYRL3WWQAsbhfinurwkZhRcPGiF2bllL7AGzk7hZRIvAVYUUhTl6eMMsXQIoHTbAtHp1nVx9bEosmnm-3RxM7N4ibAhSLfNNJYydIALCOqJCJ27AnCUXMSi3SM9n2/s320/1001154444.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYiNkEBBLvOSmfpCvYpW1EigUgiOBm3fp_z-lUt5TEW2l4lIL6ObRzTUGGyQ-VsL_Xcm3vzAQps1ZzOUilJbnL0v4Qp8KseMeii-AnI2in9-0qR2r9dUagIrNGUOXQYfaXfKbQGMc2NqL1wVa0xRjeywcsCTAoaUoSN6bd5v7yQLFLNpI43mlo9U7lmkb5/s320/1001154445.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjaFzMUUPjBukfKn3TCLZSC7v1oZisU4yXv_5ig7D2jOcafPqWY9Mp4d61QrJNjfzVmg6UIRgrBpcuQbzPPHib9o1w_qtSsFB7bis48UuCSyTjJDps4G5PKGCvgKt-9v3HxJmfceHKG29b8dmy4chCvBag3BOX2_aX-t7JwPMcszhNHFKrvaR3iyHpE2BV_/s3080/1001154285.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi3TR4YqdOC2XhYV8PLi7jFqUzg36c93G8gfrn4dLKEFcWOJnrODEAG7-yIPmCK4Yw1YSz8o8Y_DyodiEFL2kCcL6ctBUApOs5ccpM14RUmB9BNIcB1JnLWI831EsQYT7YRjqzrGkI_uH9RZL-3eM8cK8BeH2WCqoFxlcm_28His4mxjhPyLaSRjswR8jpJ/s320/1001154598.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEge-ql0PO8tDiRLkPhx5y2gKTuDmRL_Dy5DlXkacExSggG1L8J420-5oCWCzo047lNkKfTnyH6ynucL5nTfZzp2qjHKNxmkF0wfvzFwAycodkqNrrQ6bl8SjD8t0sJVNh6znWGoYrsleIxhFVr4ucjS2g20Lg6ba54uNDUsSAWqEq_cABNQrbEYuIqQNj5o/s320/1001154601.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEip4vGLRPYmILNONg8GpLjh-LaqZT4hcCxAbk_r9Xp0XhlumQdp0lMhjx9x_EpLG7tkZTU0lY6UZtyzlgLVf6nMiaemJt-NBSex2k3LQERXABC62q5H1KeAEeSkOc_sNzz2iFrUw5szIt-BYQGiKD06RUjVnlANfTowiq4pxKfTqeNbC-yhQQYuSB80kfr3/s320/1001154604.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgW61WiR_NzqGXhSAnxGr_7GLa6Gc7Jqb4JhjLle9U-Y_yPuXdWTKt7s0XuOPBmnCWrWnypl55gXfpNLaRQr_H4y_L6jD7eQbNK7Q2CSQoJGhzt66Ci-zv39RWko9wR_HFBQufnKrFY7fD9_H4DoeBzJ4QIurYl6Ul8nM6ki4GsTskJVjXxT1RZvZKce48n/s320/1001154610.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiL2HFZfftA-kTn7CChdKVR9zSApRzS7w9uC1XZW5CPEcgfSWqobA75ExHP0oogrYMwtU_tA8T4OVshzeJUxyLkjZD8cYjfgS-FkauR8PqailrfucsxtfKArv4QjFbhY1UDwlXXIdEBwL_PQxOfKZvusxV4_eC-Cl6-ZUQ9LOZ4SWpAlKWMiLakEAdQHN-v/s320/1001154613.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjT07Z7S2L9h0TYSuJl58PcsOGc_QctpmtPv3xlU9rMVolFth2yY_FttZ31m_o5ZBudH4XFTe6_xxNwo4eNByclmLIiXdCbnoEpiHuqEooOuFz6MjxAIZZUKz_R_0hpFU8-lczhPck1iYcad8HBriOMV3WyRomcbKzBZvXQwRHYPO852gQ-PMk1y_bmdN02/s320/1001154616.jpg",
+      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1J6qFLcbkks7YcFFA3KunMEcmP0Gb5oENX6JWzbCpMKT_f6ZIilZy5J9yPAlamAdFJo1LWc0ikRHnjnOJ8dqpJIKr6qCWQLc-fL5Kq2r14hIQswcb3-3-bgAQCGr-C21UjL82Q7IBGzaAbSafCFOfXHrZ8cvJ1MQ8FuO0sXxebcGr5L2bgKf6XyLM4juk/s320/1001154619.jpg"
+    ];
+
+    function applyState() {
+      readingGroup.style.left = state.x + '%';
+      readingGroup.style.top = state.y + '%';
+      readingGroup.style.width = state.w + '%';
+      readingGroup.style.height = state.h + '%';
+      const parts = state.text.split(' ');
+      const valText = parts.shift() || '';
+      const unitText = parts.join(' ') || '';
+      display.textContent = valText;
+      unitElem.textContent = unitText;
+      ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
+      ghostDisplay.style.display = state.ghost ? 'block' : 'none';
+      [reading, unitElem].forEach(el => {
+          el.style.color = state.color;
+          el.style.setProperty('--font-weight', state.fontWeight);
+          el.style.setProperty('--opacity', state.opacity);
+      });
+      document.documentElement.style.setProperty('--glass-opacity', state.glassOpacity);
+      document.documentElement.style.setProperty('--dirt-opacity', state.dirtOpacity);
+      document.documentElement.style.setProperty('--moire-opacity', state.moireOpacity);
+      document.documentElement.style.setProperty('--rotation', state.rotation + 'deg');
+      document.documentElement.style.setProperty('--tilt-x', -state.tiltX + 'deg');
+      document.documentElement.style.setProperty('--tilt-y', state.tiltY + 'deg');
+      document.documentElement.style.setProperty('--zoom', state.zoom);
+      document.documentElement.style.setProperty('--scanner-darkness', state.scannerDarkness);
+      if(state.scannerMode) {
+          readingGroup.classList.add('scanner-mode-active');
+          scannerBtn.textContent = 'Scanner: ON';
+          scannerBtn.classList.add('active');
+      } else {
+          readingGroup.classList.remove('scanner-mode-active');
+          scannerBtn.textContent = 'Scanner: OFF';
+          scannerBtn.classList.remove('active');
+      }
+      display.style.fontSize = state.font + 'px';
+      ghostDisplay.style.fontSize = state.font + 'px';
+      unitElem.style.fontSize = state.unitFont + 'px';
+      unitElem.style.left = state.unitX + '%';
+      unitElem.style.top = state.unitY + '%';
+      const filterString = `blur(${state.edgeBlur}px)`;
+      if(state.noise) { reading.classList.add('noise-active'); unitElem.classList.add('noise-active'); }
+      else { reading.classList.remove('noise-active'); unitElem.classList.remove('noise-active'); }
+      if(state.flicker) { reading.classList.add('flicker-active'); unitElem.classList.add('flicker-active'); }
+      else { reading.classList.remove('flicker-active'); unitElem.classList.remove('flicker-active'); }
+      reading.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
+      unitElem.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
+      textInput.value = state.text;
+      fontRange.value = state.font;
+      document.getElementById('fontValue').textContent = state.font + 'px';
+      unitFontRange.value = state.unitFont;
+      document.getElementById('unitFontValue').textContent = state.unitFont + 'px';
+      unitXRange.value = state.unitX;
+      unitYRange.value = state.unitY;
+      fontWeightRange.value = state.fontWeight;
+      document.getElementById('fontWeightValue').textContent = state.fontWeight;
+      opacityRange.value = state.opacity;
+      document.getElementById('opacityValue').textContent = Math.round(state.opacity * 100) + '%';
+      rotationInput.value = state.rotation;
+      tiltXRange.value = state.tiltX;
+      document.getElementById('tiltXValue').textContent = state.tiltX + '°';
+      tiltYRange.value = state.tiltY;
+      document.getElementById('tiltYValue').textContent = state.tiltY + '°';
+      edgeBlurRange.value = state.edgeBlur;
+      document.getElementById('edgeBlurValue').textContent = state.edgeBlur + 'px';
+      zoomRange.value = state.zoom;
+      colorInput.value = state.color;
+      glassRange.value = state.glassOpacity;
+      document.getElementById('glassValue').textContent = Math.round(state.glassOpacity * 100) + '%';
+      dirtRange.value = state.dirtOpacity;
+      document.getElementById('dirtValue').textContent = Math.round(state.dirtOpacity * 100) + '%';
+      moireRange.value = state.moireOpacity;
+      document.getElementById('moireValue').textContent = Math.round(state.moireOpacity * 100) + '%';
+      scannerDarkRange.value = state.scannerDarkness;
+      scannerDarkValue.textContent = Math.round(state.scannerDarkness * 100) + '%';
+      noiseBtn.textContent = state.noise ? 'Noise: ON' : 'Noise: OFF';
+      ghostBtn.textContent = state.ghost ? 'Ghost: ON' : 'Ghost: OFF';
+      flickerBtn.textContent = state.flicker ? 'Flicker: ON' : 'Flicker: OFF';
+      localStorage.setItem('finalVoiceMeterState', JSON.stringify(state));
+    }
+
+    // DRAG & RESIZE (LOGIC UNCHANGED)
+    function throttle(fn, delay) { let last = 0; return (...args) => { const now = Date.now(); if(now - last >= delay) { fn(...args); last = now; } } }
+    let isDrag = false, startX, startY, startLeft, startTop;
+    function startDrag(e, el, isGroup) {
+      if(e.target === resizer) return; e.preventDefault(); isDrag = true;
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      const rect = wrap.getBoundingClientRect();
+      startX = cx; startY = cy; startLeft = isGroup ? state.x : state.unitX; startTop = isGroup ? state.y : state.unitY;
+      const moveHandler = throttle((ev) => {
+          if(!isDrag) return;
+          const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+          const mcy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+          state[isGroup ? 'x' : 'unitX'] = startLeft + ((mcx - startX) / rect.width * 100);
+          state[isGroup ? 'y' : 'unitY'] = startTop + ((mcy - startY) / rect.height * 100);
+          applyState();
+      }, 16);
+      const stopHandler = () => { isDrag = false; window.removeEventListener('mousemove', moveHandler); window.removeEventListener('mouseup', stopHandler); window.removeEventListener('touchmove', moveHandler); window.removeEventListener('touchend', stopHandler); };
+      window.addEventListener('mousemove', moveHandler); window.addEventListener('mouseup', stopHandler); window.addEventListener('touchmove', moveHandler); window.addEventListener('touchend', stopHandler);
+    }
+    readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, true));
+    readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, true));
+    unitElem.addEventListener('mousedown', (e) => startDrag(e, unitElem, false));
+    unitElem.addEventListener('touchstart', (e) => startDrag(e, unitElem, false));
+    resizer.addEventListener('mousedown', initResize); resizer.addEventListener('touchstart', initResize);
+    function initResize(e) {
+        e.stopPropagation(); e.preventDefault();
+        const sW = state.w, sH = state.h, sx = e.touches ? e.touches[0].clientX : e.clientX, sy = e.touches ? e.touches[0].clientY : e.clientY, rect = wrap.getBoundingClientRect();
+        const doResize = throttle((ev) => {
+            const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX, mcy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+            state.w = Math.max(5, sW + ((mcx - sx) / rect.width * 100));
+            state.h = Math.max(2, sH + ((mcy - sy) / rect.height * 100));
+            state.font = Math.round((state.h / 100) * rect.height * 0.6); applyState();
+        }, 16);
+        const stopResize = () => { window.removeEventListener('mousemove', doResize); window.removeEventListener('mouseup', stopResize); window.removeEventListener('touchmove', doResize); window.removeEventListener('touchend', stopResize); };
+        window.addEventListener('mousemove', doResize); window.addEventListener('mouseup', stopResize); window.addEventListener('touchmove', doResize); window.addEventListener('touchend', stopResize);
+    }
+
+    textInput.addEventListener('input', () => { state.text = textInput.value; applyState(); });
+    fontRange.addEventListener('input', () => { state.font = +fontRange.value; applyState(); });
+    unitFontRange.addEventListener('input', () => { state.unitFont = +unitFontRange.value; applyState(); });
+    unitXRange.addEventListener('input', () => { state.unitX = +unitXRange.value; applyState(); });
+    unitYRange.addEventListener('input', () => { state.unitY = +unitYRange.value; applyState(); });
+    fontWeightRange.addEventListener('input', () => { state.fontWeight = +fontWeightRange.value; applyState(); });
+    opacityRange.addEventListener('input', () => { state.opacity = +opacityRange.value; applyState(); });
+    rotationInput.addEventListener('input', () => { state.rotation = +rotationInput.value; applyState(); });
+    tiltXRange.addEventListener('input', () => { state.tiltX = +tiltXRange.value; applyState(); });
+    tiltYRange.addEventListener('input', () => { state.tiltY = +tiltYRange.value; applyState(); });
+    edgeBlurRange.addEventListener('input', () => { state.edgeBlur = +edgeBlurRange.value; applyState(); });
+    zoomRange.addEventListener('input', () => { state.zoom = +zoomRange.value; applyState(); });
+    colorInput.addEventListener('input', () => { state.color = colorInput.value; applyState(); });
+    glassRange.addEventListener('input', () => { state.glassOpacity = +glassRange.value; applyState(); });
+    dirtRange.addEventListener('input', () => { state.dirtOpacity = +dirtRange.value; applyState(); });
+    moireRange.addEventListener('input', () => { state.moireOpacity = +moireRange.value; applyState(); });
+    noiseBtn.addEventListener('click', () => { state.noise = !state.noise; applyState(); });
+    ghostBtn.addEventListener('click', () => { state.ghost = !state.ghost; applyState(); });
+    flickerBtn.addEventListener('click', () => { state.flicker = !state.flicker; applyState(); });
+    scannerBtn.addEventListener('click', () => { state.scannerMode = !state.scannerMode; applyState(); });
+    scannerDarkRange.addEventListener('input', () => { state.scannerDarkness = +scannerDarkRange.value; applyState(); });
+
+    const gallery = document.getElementById('imageGallery');
+    function loadGallery() {
+        gallery.innerHTML = '';
+        meterImages.forEach((src, idx) => {
+            const img = document.createElement('img'); img.src = src; img.className = 'gallery-thumb'; if(idx === 0) img.classList.add('selected');
+            img.onclick = () => { document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('selected')); img.classList.add('selected'); meterImg.src = src; };
+            gallery.appendChild(img);
+        });
+    }
+    loadGallery();
+    addImageBtn.addEventListener('click', () => { const url = document.getElementById('imageInput').value; if(url) { meterImages.push(url); loadGallery(); } });
+
+    exportBtn.addEventListener('click', () => {
+      const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d'), img = new Image();
+      img.crossOrigin = 'anonymous'; img.src = meterImg.src;
+      img.onload = () => {
+          const z = state.zoom; canvas.width = img.width * z; canvas.height = img.height * z; ctx.scale(z, z); ctx.drawImage(img, 0, 0);
+          if(state.scannerMode) {
+              ctx.save(); ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; ctx.fillRect(0,0,img.width, img.height);
+              const rx = (state.x / 100) * img.width, ry = (state.y / 100) * img.height, rw = (state.w / 100) * img.width, rh = (state.h / 100) * img.height;
+              ctx.translate(rx, ry); ctx.rotate(state.rotation * Math.PI / 180);
+              ctx.globalCompositeOperation = 'destination-out'; ctx.fillRect(0, 0, rw, rh);
+              ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeRect(0, 0, rw, rh);
+              ctx.restore();
+          }
+          const drawText = (text, xPct, yPct, size, isGhost) => {
+              ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
+              const rad = state.rotation * Math.PI / 180; ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
+              ctx.font = `${state.fontWeight} ${size}px 'DS-Digital', monospace`; ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; 
+              ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = isGhost ? 0.08 : state.opacity; ctx.fillStyle = state.color;
+              if (state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
+              let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
+              for (let char of text) { ctx.fillText(char, xc + (state.w/100*img.width), (state.h/100*img.height)/2); xc += ctx.measureText(char).width; }
+              ctx.restore();
+          };
+          const parts = state.text.split(' '), val = parts[0], unit = parts.slice(1).join(' ');
+          if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
+          drawText(val, state.x, state.y, state.font, false);
+          ctx.save();
+          const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; ctx.translate(ux, uy);
+          ctx.rotate(state.rotation * Math.PI / 180); ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
+          ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
+          if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; ctx.fillText(unit, 0, 0); ctx.restore();
+          const link = document.createElement('a'); link.download = 'meter.jpg'; link.href = canvas.toDataURL('image/jpeg', 0.9); link.click();
+      };
+      img.onerror = () => alert('CORS Error: Image cannot be saved.');
+    });
+    if ('webkitSpeechRecognition' in window) {
+        const recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'hi-IN';
+        let isListening = false;
+        const toggleMic = () => {
+            if(!isListening) {
+                try { recognition.start(); isListening = true; floatMic.classList.add('mic-active'); panelMicBtn.classList.add('mic-active'); panelMicBtn.textContent = "🎤 Voice Active..."; } catch(e) { console.log(e); }
+            } else { isListening = false; recognition.stop(); floatMic.classList.remove('mic-active'); panelMicBtn.classList.remove('mic-active'); panelMicBtn.textContent = "🎤 Voice Control (ON/OFF)"; }
+        };
+        floatMic.addEventListener('click', toggleMic); panelMicBtn.addEventListener('click', toggleMic);
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+            const decimalMatch = transcript.match(/(\d+(\.\d+)?)/);
+            if (decimalMatch) {
+                const rawNumber = decimalMatch[0];
+                if (rawNumber.includes('.')) { state.text = `${rawNumber} kW`; } 
+                else { let paddedNumber = rawNumber.padStart(6, '0'); if (transcript.includes('kw') || transcript.includes('watt')) { state.text = `${rawNumber} kW`; } else { state.text = `${paddedNumber} kWh`; } }
+            }
+            applyState();
+        };
+        recognition.onend = () => { if(isListening) { try { recognition.start(); } catch(e) {} } };
+        recognition.onerror = (e) => { if(isListening && e.error !== 'not-allowed') { try { recognition.stop(); recognition.start(); } catch(err){} } };
+        masterResetBtn.addEventListener('click', () => {
+            if(confirm('Are you sure you want to reset all settings?')) {
+                isListening = false; recognition.stop();
+                floatMic.classList.remove('mic-active'); panelMicBtn.classList.remove('mic-active'); panelMicBtn.textContent = "🎤 Voice Control (ON/OFF)";
+                localStorage.removeItem('finalVoiceMeterState');
+                Object.assign(state, defaults);
+                applyState();
+            }
+        });
+    } else {
+        floatMic.style.display = 'none'; panelMicBtn.style.display = 'none';
+        masterResetBtn.addEventListener('click', () => { if(confirm('Reset settings?')) { localStorage.removeItem('finalVoiceMeterState'); Object.assign(state, defaults); applyState(); } });
+    }
+    applyState();
+  })();
+</script>
+</body>
+</html>
+```
+
