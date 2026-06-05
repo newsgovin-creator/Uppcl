@@ -634,7 +634,7 @@
       // Memory state for 'Normal' return
       let memoryState = { unitFont: defaults.unitFont, unitX: defaults.unitX, unitY: defaults.unitY };
 
-      // Fixed the missing 'k' in the 5th image URL
+      // Image list with ALL corrections
       const meterImages = [
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjMdcxhtMJaGXEUtZdMzMCDwfd1m5MoSyaGju7TLH9T3siF3_nbGguy9BW4td0_5nipYRL3WWQAsbhfinurwkZhRcPGiF2bllL7AGzk7hZRIvAVYUUhTl6eMMsXQIoHTbAtHp1nVx9bEosmnm-3RxM7N4ibAhSLfNNJYydIALCOqJCJ27AnCUXMSi3SM9n2/s320/1001154444.jpg",
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYiNkEBBLvOSmfpCvYpW1EigUgiOBm3fp_z-lUt5TEW2l4lIL6ObRzTUGGyQ-VsL_Xcm3vzAQps1ZzOUilJbnL0v4Qp8KseMeii-AnI2in9-0qR2r9dUagIrNGUOXQYfaXfKbQGMc2NqL1wVa0xRjeywcsCTAoaUoSN6bd5v7yQLFLNpI43mlo9U7lmkb5/s320/1001154445.jpg",
@@ -667,30 +667,27 @@
         ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
         ghostDisplay.style.display = state.ghost ? 'block' : 'none';
 
-        // --- SMART ALIGNMENT LOGIC ---
+        // --- SMART ALIGNMENT LOGIC (FIXED OVERLAP & GAPS) ---
         if(state.cuMode) {
-            // Lock unit block physically to the scanner box
             state.unitX = state.x;
             state.unitY = state.y;
             
-            // Push reading to the left edge of the scanner box
-            reading.style.paddingRight = '35%'; 
-            
-            // Expand unit element to full scanner box size
             unitElem.style.width = state.w + '%';
             unitElem.style.height = state.h + '%';
             unitElem.style.padding = '0';
-            unitElem.style.pointerEvents = 'none'; // Prevents dragging glitch
+            unitElem.style.pointerEvents = 'none'; 
             
             if (valText.includes('.')) {
-                // Point Number -> Top-Right MD, Bottom-Right kW
+                // Point Number Logic -> MD at Top-Right (Right: 12%), kW at Bottom-Right (Right: 12%)
+                reading.style.paddingRight = '25%'; // Less padding to close gap naturally
                 unitElem.innerHTML = `
-                <div style="position:absolute; top:5%; right:5%; font-family:'DS-Digital', monospace; font-size:1.3em; line-height:0.8; letter-spacing:1px;">MD</div>
-                <div style="position:absolute; bottom:5%; right:5%; font-family:monospace; line-height:1; letter-spacing:1px; font-size:1.1em;">kW</div>`;
+                <div style="position:absolute; top:8%; right:12%; font-family:'DS-Digital', monospace; font-size:1.3em; line-height:0.8; letter-spacing:1px;">MD</div>
+                <div style="position:absolute; bottom:8%; right:12%; font-family:monospace; line-height:1; letter-spacing:1px; font-size:1.1em;">kW</div>`;
             } else {
-                // Normal Number -> Center-Right C u, Bottom-Right kW h
+                // Normal Number Logic -> C u at Center-Right (Right: 18%), kW h at Bottom-Right (Right: 5%)
+                reading.style.paddingRight = '45%'; // More padding to avoid C overlapping 5
                 unitElem.innerHTML = `
-                <div style="position:absolute; top:50%; right:28%; transform:translateY(-50%); display:flex; align-items:flex-end;">
+                <div style="position:absolute; top:45%; right:18%; transform:translateY(-50%); display:flex; align-items:flex-end;">
                     <span style="font-family:'DS-Digital', monospace; font-size:1.7em; line-height:0.8;">C</span>
                     <span style="font-family:'DS-Digital', monospace; font-size:1.3em; line-height:0.8; margin-left:3px; clip-path:inset(35% 0 0 0);">u</span>
                 </div>
@@ -751,7 +748,6 @@
         unitFontRange.value = state.unitFont;
         document.getElementById('unitFontValue').textContent = state.unitFont + 'px';
         
-        // Show correct unit x/y in sliders even when locked
         unitXRange.value = state.unitX;
         unitYRange.value = state.unitY;
         
@@ -817,14 +813,12 @@
               
               if (transcript.includes('capital') || transcript.includes('कैपिटल') || transcript.includes('c u') || transcript.includes('सी यू') || transcript.includes('xyz')) {
                   if(!state.cuMode) {
-                      // Save current state before switching to advanced mode
                       memoryState = { unitFont: state.unitFont, unitX: state.unitX, unitY: state.unitY };
                   }
                   state.cuMode = true;
                   autoAdjustSystem(); 
               } else if (transcript.includes('normal') || transcript.includes('नॉर्मल') || transcript.includes('हटाओ')) {
                   if(state.cuMode) {
-                      // Restore memory state
                       state.unitFont = memoryState.unitFont;
                       state.unitX = memoryState.unitX;
                       state.unitY = memoryState.unitY;
@@ -836,7 +830,7 @@
               if (decimalMatch) {
                   const rawNumber = decimalMatch[0]; 
                   if (rawNumber.includes('.')) { 
-                      state.text = `${rawNumber} kW`; // Exact zeros logic
+                      state.text = `${rawNumber} kW`; 
                   } 
                   else {
                       let paddedNumber = rawNumber.padStart(6, '0');
@@ -908,7 +902,7 @@
               applyState();
           }, 16);
           const stopResize = () => { window.removeEventListener('mousemove', doResize); window.removeEventListener('mouseup', stopResize); window.removeEventListener('touchmove', doResize); window.removeEventListener('touchend', stopResize); };
-          window.addEventListener('mousemove', doResize); window.addEventListener('mouseup', stopResize); window.addEventListener('touchmove', doResize); window.addEventListener('touchmove', stopResize);
+          window.addEventListener('mousemove', doResize); window.addEventListener('mouseup', stopResize); window.addEventListener('touchmove', doResize); window.addEventListener('touchend', stopResize);
       }
 
       textInput.addEventListener('input', () => { state.text = textInput.value; applyState(); });
@@ -950,7 +944,7 @@
       loadGallery();
       addImageBtn.addEventListener('click', () => { const url = document.getElementById('imageInput').value; if(url) { meterImages.push(url); loadGallery(); } });
 
-      // --- EXPORT CANVAS WITH EXACT CORNER ALIGNMENT ---
+      // --- EXPORT CANVAS WITH FIXED ALIGNMENTS ---
       exportBtn.addEventListener('click', () => {
         const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d'), img = new Image();
         img.crossOrigin = 'anonymous'; img.src = meterImg.src;
@@ -972,7 +966,12 @@
                 if (state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
                 let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
-                let rightPaddingOffset = state.cuMode ? (state.w/100*img.width) * 0.35 : 10;
+                
+                // Pushing reading back dynamically for Canvas
+                let rightPaddingOffset = 10;
+                if(state.cuMode) {
+                    rightPaddingOffset = text.includes('.') ? (state.w/100*img.width) * 0.25 : (state.w/100*img.width) * 0.45;
+                }
                 
                 for (let char of text) { 
                     ctx.fillText(char, xc + (state.w/100*img.width) - rightPaddingOffset, (state.h/100*img.height)/2); 
@@ -994,28 +993,29 @@
             if (state.cuMode) {
                 let boxW = (state.w / 100) * img.width;
                 let boxH = (state.h / 100) * img.height;
-                let padX = boxW * 0.05;
-                let padY = boxH * 0.15;
                 
                 if (val.includes('.')) {
-                    // Export MD (Top-Right) and kW (Bottom-Right)
+                    // Export MD (Top-Right) and kW (Bottom-Right) [right: 12%]
+                    let padX = boxW * 0.12;
+                    let padY = boxH * 0.08;
+                    
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'top';
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
-                    ctx.fillText("MD", boxW - padX, padY * 0.3);
+                    ctx.fillText("MD", boxW - padX, padY);
                     
                     ctx.textBaseline = 'bottom';
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
-                    ctx.fillText("kW", boxW - padX, boxH - (padY * 0.3));
+                    ctx.fillText("kW", boxW - padX, boxH - padY);
                 } else {
-                    // Export C u (Center-Right) and kW h (Bottom-Right)
+                    // Export C u (Center-Right: 18%) and kW h (Bottom-Right: 5%)
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'bottom';
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.0}px monospace`;
-                    ctx.fillText("kW h", boxW - padX, boxH - (padY * 0.3));
+                    ctx.fillText("kW h", boxW - (boxW * 0.05), boxH - (boxH * 0.05));
                     
                     ctx.textBaseline = 'alphabetic'; 
-                    let cuX = boxW - (boxW * 0.28); 
+                    let cuX = boxW - (boxW * 0.18); 
                     let cuY = (boxH / 2) + (state.unitFont * 0.4); 
                     
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
