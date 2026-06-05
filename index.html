@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -307,7 +306,6 @@
       font-family: Arial, sans-serif;
     }
 
-    /* नई CSS जो आपके पुराने कोड को बिना छेड़े नीचे जोड़ी गई है */
     #userNameInput {
       width: 90%;
       padding: 12px;
@@ -439,7 +437,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, set, get, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-    // 1. आपके नामों की लिस्ट (यहाँ आप नए नाम जोड़ सकते हैं)
     const allowedNames = [
       "Sahil", "Aslam", "Sanjeev Kumar", "Pawan Kumar", "Ashutosh Dixit", "Vikas Yadav", 
       "Sumit Kumar", "Hari Om", "Kapoor Chandra", "Anurag Kumar", "Abhishek Kumar", 
@@ -447,7 +444,6 @@
       "Sundaram Kumar", "Kuldeep", "Gyanendra Singh", "Anmol Kumar", "Rahul Sharma"
     ];
 
-    // 2. अपनी गुप्त सेटिंग्स यहाँ भरें
     const TELEGRAM_BOT_TOKEN = "7828429254:AAElfiY2LM0d7JOZOqnrnY51YWZYqM2OHeI";
     const TELEGRAM_CHAT_ID = "1436095302";
     
@@ -479,7 +475,6 @@
     const CORRECT_ID = "SuperAdmin";
     const CORRECT_PASS = "Meter@2026";
     
-    // यह ग्लोबल वेरिएबल आपकी इमेजेज को सेव करते वक्त नाम पहचानेगा
     window.loggedInUserName = "Unknown"; 
 
     const loginOverlay = document.getElementById('login-overlay');
@@ -502,7 +497,6 @@
         return;
       }
 
-      // नाम को लिस्ट से मैच करना (बिना छोटे-बड़े अक्षरों की परवाह किए)
       const selectedNameMatch = allowedNames.find(n => n.toLowerCase() === enteredNameRaw.toLowerCase());
 
       if (!selectedNameMatch) {
@@ -574,7 +568,6 @@
       document.getElementById('reqIdDisplay').innerText = "Device ID: " + devId;
     }
 
-    // यह नया हिस्सा आपके पुराने 'Add' बटन में फायरबेस स्टोरेज को जोड़ता है (पुराने कोड को छुए बिना)
     document.getElementById('addImageBtn').addEventListener('click', () => {
       const url = document.getElementById('imageInput').value;
       if(url && window.loggedInUserName !== "Unknown") {
@@ -632,7 +625,8 @@
         rotation: 0, tiltX: 0, tiltY: 0, opacity: 0.85, edgeBlur: 0.6,
         glassOpacity: 0.3, dirtOpacity: 0.2, moireOpacity: 0.10,
         noise: true, ghost: true, flicker: true, zoom: 1,
-        scannerMode: false, scannerDarkness: 0.7
+        scannerMode: false, scannerDarkness: 0.7,
+        cuMode: false // SMART SYSTEM ADDED HERE
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
@@ -658,10 +652,21 @@
         const parts = state.text.split(' ');
         const valText = parts.shift() || '';
         const unitText = parts.join(' ') || '';
+        
         display.textContent = valText;
-        unitElem.textContent = unitText;
         ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
         ghostDisplay.style.display = state.ghost ? 'block' : 'none';
+
+        // --- NEW SMART CU MODE DISPLAY ---
+        if(state.cuMode) {
+            unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; line-height:0.85;">
+                <span style="font-family:'DS-Digital', monospace; font-size:1.6em; margin-bottom: 2px;">C u</span>
+                <span style="letter-spacing: 1px;">kW h</span>
+            </div>`;
+        } else {
+            unitElem.textContent = unitText;
+        }
+
         [reading, unitElem].forEach(el => {
             el.style.color = state.color;
             el.style.setProperty('--font-weight', state.fontWeight);
@@ -675,6 +680,7 @@
         document.documentElement.style.setProperty('--tilt-y', state.tiltY + 'deg');
         document.documentElement.style.setProperty('--zoom', state.zoom);
         document.documentElement.style.setProperty('--scanner-darkness', state.scannerDarkness);
+        
         if(state.scannerMode) {
             readingGroup.classList.add('scanner-mode-active');
             scannerBtn.textContent = 'Scanner: ON';
@@ -684,18 +690,22 @@
             scannerBtn.textContent = 'Scanner: OFF';
             scannerBtn.classList.remove('active');
         }
+        
         display.style.fontSize = state.font + 'px';
         ghostDisplay.style.fontSize = state.font + 'px';
         unitElem.style.fontSize = state.unitFont + 'px';
         unitElem.style.left = state.unitX + '%';
         unitElem.style.top = state.unitY + '%';
+        
         const filterString = `blur(${state.edgeBlur}px)`;
         if(state.noise) { reading.classList.add('noise-active'); unitElem.classList.add('noise-active'); }
         else { reading.classList.remove('noise-active'); unitElem.classList.remove('noise-active'); }
         if(state.flicker) { reading.classList.add('flicker-active'); unitElem.classList.add('flicker-active'); }
         else { reading.classList.remove('flicker-active'); unitElem.classList.remove('flicker-active'); }
+        
         reading.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
         unitElem.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
+        
         textInput.value = state.text;
         fontRange.value = state.font;
         document.getElementById('fontValue').textContent = state.font + 'px';
@@ -727,10 +737,11 @@
         noiseBtn.textContent = state.noise ? 'Noise: ON' : 'Noise: OFF';
         ghostBtn.textContent = state.ghost ? 'Ghost: ON' : 'Ghost: OFF';
         flickerBtn.textContent = state.flicker ? 'Flicker: ON' : 'Flicker: OFF';
+        
         localStorage.setItem('finalVoiceMeterState', JSON.stringify(state));
       }
 
-      // VOICE RECOGNITION (FIXED FOR MULTI-USER & STABILITY)
+      // VOICE RECOGNITION (SMART TRIGGER ADDED)
       if ('webkitSpeechRecognition' in window) {
           const recognition = new webkitSpeechRecognition();
           recognition.continuous = true;
@@ -761,6 +772,14 @@
 
           recognition.onresult = (event) => {
               const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+              
+              // --- SMART SYSTEM KEYWORD DETECTION ---
+              if (transcript.includes('capital') || transcript.includes('कैपिटल') || transcript.includes('c u') || transcript.includes('सी यू') || transcript.includes('xyz')) {
+                  state.cuMode = true;
+              } else if (transcript.includes('normal') || transcript.includes('नॉर्मल') || transcript.includes('हटाओ')) {
+                  state.cuMode = false;
+              }
+
               const decimalMatch = transcript.match(/(\d+(\.\d+)?)/);
               if (decimalMatch) {
                   const rawNumber = decimalMatch[0];
@@ -796,7 +815,7 @@
           });
       }
       
-      // DRAG & RESIZE (LOGIC UNCHANGED)
+      // DRAG & RESIZE
       function throttle(fn, delay) { let last = 0; return (...args) => { const now = Date.now(); if(now - last >= delay) { fn(...args); last = now; } } }
       let isDrag = false, startX, startY, startLeft, startTop;
       function startDrag(e, el, isGroup) {
@@ -894,11 +913,26 @@
             const parts = state.text.split(' '), val = parts[0], unit = parts.slice(1).join(' ');
             if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
             drawText(val, state.x, state.y, state.font, false);
+            
             ctx.save();
             const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; ctx.translate(ux, uy);
-            ctx.rotate(state.rotation * Math.PI / 180); ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
+            ctx.rotate(state.rotation * Math.PI / 180); 
             ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
-            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; ctx.fillText(unit, 0, 0); ctx.restore();
+            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
+            
+            // --- SMART CU MODE EXPORT LOGIC ---
+            if (state.cuMode) {
+                ctx.textAlign = 'center';
+                ctx.font = `${state.fontWeight} ${state.unitFont * 1.6}px 'DS-Digital', monospace`;
+                ctx.fillText("C u", 0, -state.unitFont * 0.6);
+                ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
+                ctx.fillText("kW h", 0, state.unitFont * 0.6);
+            } else {
+                ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
+                ctx.fillText(unit, 0, 0); 
+            }
+            ctx.restore();
+            
             const link = document.createElement('a'); link.download = 'meter.jpg'; link.href = canvas.toDataURL('image/jpeg', 0.9); link.click();
         };
         img.onerror = () => alert('CORS Error: Image cannot be saved.');
