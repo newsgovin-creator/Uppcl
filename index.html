@@ -439,7 +439,7 @@
 
     const allowedNames = [
       "Sahil", "Aslam", "Sanjeev Kumar", "Pawan Kumar", "Ashutosh Dixit", "Vikas Yadav", 
-      "Sumit Kumar", "Hari Om", "Kapoor Chandra", "Anurag Kumar", "Abhishek Kumar", 
+      "Sumit Kumar", "Hari Om", "Kapoor Chandra", "Anuragূপ Kumar", "Abhishek Kumar", 
       "Priyanshu Gupta", "Abhishek Tripathi", "Ravindra Singh", "Niraj", 
       "Sundaram Kumar", "Kuldeep", "Gyanendra Singh", "Anmol Kumar", "Rahul Sharma"
     ];
@@ -626,7 +626,7 @@
         glassOpacity: 0.3, dirtOpacity: 0.2, moireOpacity: 0.10,
         noise: true, ghost: true, flicker: true, zoom: 1,
         scannerMode: false, scannerDarkness: 0.7,
-        cuMode: false // SMART SYSTEM ADDED HERE
+        cuMode: false 
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
@@ -644,6 +644,22 @@
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1J6qFLcbkks7YcFFA3KunMEcmP0Gb5oENX6JWzbCpMKT_f6ZIilZy5J9yPAlamAdFJo1LWc0ikRHnjnOJ8dqpJIKr6qCWQLc-fL5Kq2r14hIQswcb3-3-bgAQCGr-C21UjL82Q7IBGzaAbSafCFOfXHrZ8cvJ1MQ8FuO0sXxebcGr5L2bgKf6XyLM4juk/s320/1001154619.jpg"
       ];
 
+      // --- AUTO ADJUSTMENT FUNCTION FOR SCANNER MODE ---
+      function autoAdjustUnit() {
+          if (state.scannerMode) {
+              // Placing unit right next to the numbers inside the scanner bounding box
+              state.unitX = state.x + state.w - 8; 
+              state.unitY = state.y + (state.h * 0.35); 
+              
+              if(state.cuMode) {
+                  // Make font perfectly proportional inside the scanner area
+                  state.unitFont = Math.max(12, state.font * 0.35); 
+                  state.unitX = state.x + state.w - 10;
+                  state.unitY = state.y + (state.h * 0.25);
+              }
+          }
+      }
+
       function applyState() {
         readingGroup.style.left = state.x + '%';
         readingGroup.style.top = state.y + '%';
@@ -657,11 +673,14 @@
         ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
         ghostDisplay.style.display = state.ghost ? 'block' : 'none';
 
-        // --- NEW SMART CU MODE DISPLAY ---
+        // --- FIXED SMART CU MODE DISPLAY (Perfect Alignment, 'u' Half-size, 'k' gap, pointer-events none) ---
         if(state.cuMode) {
-            unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; line-height:0.85;">
-                <span style="font-family:'DS-Digital', monospace; font-size:1.6em; margin-bottom: 2px;">C u</span>
-                <span style="letter-spacing: 1px;">kW h</span>
+            unitElem.innerHTML = `<div style="position:relative; pointer-events:none; text-align:left; display:flex; flex-direction:column; align-items:flex-start;">
+                <div style="white-space:nowrap;">
+                    <span style="font-family:'DS-Digital', monospace; font-size:1.5em; line-height:0.8;">C </span>
+                    <span style="font-family:'DS-Digital', monospace; font-size:1.1em; line-height:0.8;">u</span>
+                </div>
+                <div style="font-family:monospace; line-height:1; margin-top:2px; padding-left:0.6em; letter-spacing:1px;">kW h</div>
             </div>`;
         } else {
             unitElem.textContent = unitText;
@@ -741,7 +760,7 @@
         localStorage.setItem('finalVoiceMeterState', JSON.stringify(state));
       }
 
-      // VOICE RECOGNITION (SMART TRIGGER ADDED)
+      // VOICE RECOGNITION (SMART TRIGGER WITH AUTO ADJUST)
       if ('webkitSpeechRecognition' in window) {
           const recognition = new webkitSpeechRecognition();
           recognition.continuous = true;
@@ -776,6 +795,7 @@
               // --- SMART SYSTEM KEYWORD DETECTION ---
               if (transcript.includes('capital') || transcript.includes('कैपिटल') || transcript.includes('c u') || transcript.includes('सी यू') || transcript.includes('xyz')) {
                   state.cuMode = true;
+                  autoAdjustUnit(); // <--- AUTO ADJUSTMENT CALL
               } else if (transcript.includes('normal') || transcript.includes('नॉर्मल') || transcript.includes('हटाओ')) {
                   state.cuMode = false;
               }
@@ -815,7 +835,7 @@
           });
       }
       
-      // DRAG & RESIZE
+      // DRAG & RESIZE (Fully Maintained & Fixed)
       function throttle(fn, delay) { let last = 0; return (...args) => { const now = Date.now(); if(now - last >= delay) { fn(...args); last = now; } } }
       let isDrag = false, startX, startY, startLeft, startTop;
       function startDrag(e, el, isGroup) {
@@ -837,8 +857,11 @@
       }
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, true));
       readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, true));
+      
+      // Since pointer-events are none on children, this event fires perfectly on the main unit element
       unitElem.addEventListener('mousedown', (e) => startDrag(e, unitElem, false));
       unitElem.addEventListener('touchstart', (e) => startDrag(e, unitElem, false));
+      
       resizer.addEventListener('mousedown', initResize); resizer.addEventListener('touchstart', initResize);
       function initResize(e) {
           e.stopPropagation(); e.preventDefault();
@@ -872,7 +895,16 @@
       noiseBtn.addEventListener('click', () => { state.noise = !state.noise; applyState(); });
       ghostBtn.addEventListener('click', () => { state.ghost = !state.ghost; applyState(); });
       flickerBtn.addEventListener('click', () => { state.flicker = !state.flicker; applyState(); });
-      scannerBtn.addEventListener('click', () => { state.scannerMode = !state.scannerMode; applyState(); });
+      
+      // --- SCANNER BUTTON WITH AUTO ADJUSTMENT ---
+      scannerBtn.addEventListener('click', () => { 
+          state.scannerMode = !state.scannerMode; 
+          if(state.scannerMode) {
+              autoAdjustUnit(); // <--- Auto adjusts when clicked
+          }
+          applyState(); 
+      });
+      
       scannerDarkRange.addEventListener('input', () => { state.scannerDarkness = +scannerDarkRange.value; applyState(); });
 
       const gallery = document.getElementById('imageGallery');
@@ -920,13 +952,19 @@
             ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
             if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
             
-            // --- SMART CU MODE EXPORT LOGIC ---
+            // --- FIXED SMART CU MODE EXPORT LOGIC ---
             if (state.cuMode) {
-                ctx.textAlign = 'center';
-                ctx.font = `${state.fontWeight} ${state.unitFont * 1.6}px 'DS-Digital', monospace`;
-                ctx.fillText("C u", 0, -state.unitFont * 0.6);
+                ctx.textAlign = 'left';
+                ctx.font = `${state.fontWeight} ${state.unitFont * 1.5}px 'DS-Digital', monospace`;
+                ctx.fillText("C", 0, -state.unitFont * 0.5);
+                
+                let cWidth = ctx.measureText("C ").width;
+                ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px 'DS-Digital', monospace`;
+                ctx.fillText("u", cWidth, -state.unitFont * 0.5);
+                
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
-                ctx.fillText("kW h", 0, state.unitFont * 0.6);
+                let kShift = cWidth * 0.4; 
+                ctx.fillText("kW h", kShift, state.unitFont * 0.6);
             } else {
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
                 ctx.fillText(unit, 0, 0); 
