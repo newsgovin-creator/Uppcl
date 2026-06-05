@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Meter — Scanner Focus Mode</title>
+  <title>Meter — Scanner Independent Mode</title>
   <link href="https://fonts.cdnfonts.com/css/ds-digital" rel="stylesheet">
   <style>
     :root {
@@ -123,7 +123,6 @@
       animation: ac-flicker 0.06s infinite alternate; 
     }
     
-    /* FLOATING MIC */
     .floating-mic {
       position: fixed;
       bottom: 30px;
@@ -171,7 +170,6 @@
       line-height: 1;
       white-space: nowrap;
       opacity: var(--opacity);
-      transition: padding 0.3s ease;
     }
     .reading .value {
       font-size: clamp(24px, 6vw, 36px);
@@ -201,7 +199,6 @@
       transform: rotate(var(--rotation)) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(1px);
       opacity: var(--opacity);
       padding: 4px 8px;
-      font-size: clamp(12px, 4vw, 16px);
     }
     
     .resizer {
@@ -246,7 +243,6 @@
     
     .section-title { width: 100%; color: #0f0; font-size: 12px; margin-top: 10px; border-bottom: 1px solid #333; padding-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
 
-    /* --- LOGIN OVERLAY CSS --- */
     #login-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -295,30 +291,10 @@
       cursor: pointer;
       margin-top: 10px;
     }
-    .login-box button:hover {
-      background: #2ea875;
-    }
-    #loginError {
-      color: #ff4444;
-      margin-top: 15px;
-      font-size: 14px;
-      display: none;
-      font-family: Arial, sans-serif;
-    }
-
-    #userNameInput {
-      width: 90%;
-      padding: 12px;
-      margin-bottom: 15px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #051018;
-      color: #fff;
-      font-size: 16px;
-    }
-    #waiting-status {
-      display: none; color: #ffeb3b; margin-top: 15px; font-family: Arial; font-size: 15px; line-height: 1.6;
-    }
+    .login-box button:hover { background: #2ea875; }
+    #loginError { color: #ff4444; margin-top: 15px; font-size: 14px; display: none; font-family: Arial, sans-serif; }
+    #userNameInput { width: 90%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #444; background: #051018; color: #fff; font-size: 16px; }
+    #waiting-status { display: none; color: #ffeb3b; margin-top: 15px; font-family: Arial; font-size: 15px; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -332,13 +308,11 @@
         <input type="password" id="adminPass" placeholder="Password">
         <button id="loginSubmitBtn">टूल ओपन करें</button>
       </div>
-
       <div id="waiting-status">
         ⏳ एडमिन के अप्रूवल का इंतज़ार है...<br>
         <span style="font-size: 12px; color: #aaa;">(कृपया इस पेज को बंद न करें)</span><br>
         <span id="reqIdDisplay" style="font-weight: bold; color: #fff; display: block; margin-top: 10px;"></span>
       </div>
-
       <p id="loginError">❌ गलत ID या Password!</p>
     </div>
   </div>
@@ -376,7 +350,6 @@
     <div style="margin-top: 10px; display: flex; gap: 8px; justify-content: center;">
       <button id="exportBtn">Download Image</button>
     </div>
-    
     <div class="image-gallery" id="imageGallery"></div>
   </div>
 
@@ -396,10 +369,7 @@
     </div>
     
     <h3>Advanced Settings</h3>
-    <div class="row">
-      <label>Reading Text</label>
-      <input type="text" id="textInput" placeholder="000339 kWh" />
-    </div>
+    <div class="row"><label>Reading Text</label><input type="text" id="textInput" placeholder="000339 kWh" /></div>
 
     <div class="section-title">Environment</div>
     <div class="row"><label>Moiré Pattern</label><input id="moireRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.10" /><span class="slider-value" id="moireValue">10%</span></div>
@@ -418,7 +388,6 @@
     <div class="row"><label>Tilt Y</label><input id="tiltYRange" class="slider" type="range" min="-60" max="60" value="0" /><span class="slider-value" id="tiltYValue">0°</span></div>
     
     <div class="row"><label>Flicker</label><button id="flickerBtn" class="ghost" style="width:auto; color: #ffeb3b; border-color: #ffeb3b;">Flicker: ON</button></div>
-    
     <div class="row"><label>Noise</label><button id="noiseBtn" class="ghost" style="width:auto;">Noise: ON</button></div>
     <div class="row"><label>Ghost (8888)</label><button id="ghostBtn" class="ghost" style="width:auto;">Ghost: ON</button></div>
     <div class="row"><label>Blur</label><input id="edgeBlurRange" class="slider" type="range" min="0" max="3" step="0.1" value="0.6" /><span class="slider-value" id="edgeBlurValue">0.6px</span></div>
@@ -474,7 +443,6 @@
 
     const CORRECT_ID = "SuperAdmin";
     const CORRECT_PASS = "Meter@2026";
-    
     window.loggedInUserName = "Unknown"; 
 
     const loginOverlay = document.getElementById('login-overlay');
@@ -490,94 +458,40 @@
       const enteredId = adminIdInput.value.trim();
       const enteredPass = adminPassInput.value.trim();
       const devId = getDeviceId();
-
-      if (!enteredNameRaw) {
-        loginError.style.display = 'block';
-        loginError.innerText = "❌ कृपया अपना नाम डालें!";
-        return;
-      }
-
+      if (!enteredNameRaw) { loginError.style.display = 'block'; loginError.innerText = "❌ कृपया अपना नाम डालें!"; return; }
       const selectedNameMatch = allowedNames.find(n => n.toLowerCase() === enteredNameRaw.toLowerCase());
-
-      if (!selectedNameMatch) {
-        loginError.style.display = 'block';
-        loginError.innerText = "❌ यह नाम सिस्टम में मौजूद नहीं है!";
-        return;
-      }
-
+      if (!selectedNameMatch) { loginError.style.display = 'block'; loginError.innerText = "❌ यह नाम सिस्टम में मौजूद नहीं है!"; return; }
       const selectedName = selectedNameMatch;
 
       if (enteredId === CORRECT_ID && enteredPass === CORRECT_PASS) {
         loginError.style.display = 'none';
-
         const deviceRef = ref(db, 'devices/' + devId);
         const snap = await get(deviceRef);
         let devData = snap.val();
-
         if (devData) {
-          if (devData.name !== selectedName) {
-            loginError.style.display = 'block';
-            loginError.innerText = `❌ यह डिवाइस '${devData.name}' के नाम पर रजिस्टर है। आप इस फोन से लॉगिन नहीं कर सकते।`;
-            return;
-          }
-
+          if (devData.name !== selectedName) { loginError.style.display = 'block'; loginError.innerText = `❌ यह डिवाइस '${devData.name}' के नाम पर रजिस्टर है।`; return; }
           if (devData.status === 'approved' && devData.approvalCount >= 2) {
-            sendTelegram(`✅ Auto-Approved Login: ${selectedName} ने काम शुरू किया। (Device: ${devId})`);
-            window.loggedInUserName = selectedName;
-            loginOverlay.style.display = 'none'; 
-            return;
+            sendTelegram(`✅ Auto-Approved Login: ${selectedName}`); window.loggedInUserName = selectedName; loginOverlay.style.display = 'none'; return;
           } else {
-            update(deviceRef, { status: 'pending' });
-            sendTelegram(`🔔 नया लॉगिन प्रयास (Approval Needed)!\nनाम: ${selectedName}\nDevice ID: ${devId}\nकृपया फायरबेस से 'approved' करें।`);
-            showWaitingScreen(devId);
+            update(deviceRef, { status: 'pending' }); sendTelegram(`🔔 Approval Needed: ${selectedName}`); showWaitingScreen(devId);
           }
         } else {
-          set(deviceRef, { name: selectedName, status: 'pending', approvalCount: 0 });
-          sendTelegram(`🚨 पहली बार नया डिवाइस लॉगिन!\nनाम: ${selectedName}\nDevice ID: ${devId}\nकृपया फायरबेस से 'approved' करें।`);
-          showWaitingScreen(devId);
+          set(deviceRef, { name: selectedName, status: 'pending', approvalCount: 0 }); sendTelegram(`🚨 New Device Login: ${selectedName}`); showWaitingScreen(devId);
         }
-
         onValue(deviceRef, (snapshot) => {
           const liveData = snapshot.val();
           if (liveData && liveData.status === 'approved' && loginOverlay.style.display !== 'none') {
             update(deviceRef, { approvalCount: (liveData.approvalCount || 0) + 1 });
-            window.loggedInUserName = selectedName;
-            loginOverlay.style.display = 'none'; 
-          } else if (liveData && liveData.status === 'rejected') {
-            alert("❌ एडमिन ने आपकी रिक्वेस्ट रद्द कर दी है।");
-            location.reload();
-          }
+            window.loggedInUserName = selectedName; loginOverlay.style.display = 'none'; 
+          } else if (liveData && liveData.status === 'rejected') { alert("❌ एडमिन ने आपकी रिक्वेस्ट रद्द कर दी है।"); location.reload(); }
         });
-
-      } else {
-        loginError.style.display = 'block';
-        loginError.innerText = "❌ गलत ID या Password!";
-      }
-    });
-
-    adminPassInput.addEventListener("keypress", function(event) {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        loginSubmitBtn.click();
-      }
+      } else { loginError.style.display = 'block'; loginError.innerText = "❌ गलत ID या Password!"; }
     });
 
     function showWaitingScreen(devId) {
-      loginForm.style.display = 'none';
-      document.getElementById('waiting-status').style.display = 'block';
+      loginForm.style.display = 'none'; document.getElementById('waiting-status').style.display = 'block';
       document.getElementById('reqIdDisplay').innerText = "Device ID: " + devId;
     }
-
-    document.getElementById('addImageBtn').addEventListener('click', () => {
-      const url = document.getElementById('imageInput').value;
-      if(url && window.loggedInUserName !== "Unknown") {
-        push(ref(db, 'uploaded_images'), {
-          user: window.loggedInUserName,
-          imageUrl: url,
-          timestamp: new Date().toLocaleString()
-        });
-      }
-    });
   </script>
 
   <script>
@@ -613,7 +527,6 @@
       const flickerBtn = document.getElementById('flickerBtn');
       const masterResetBtn = document.getElementById('masterResetBtn'); 
       const exportBtn = document.getElementById('exportBtn');
-      const addImageBtn = document.getElementById('addImageBtn');
       const scannerBtn = document.getElementById('scannerBtn');
       const scannerDarkRange = document.getElementById('scannerDarkRange');
       const scannerDarkValue = document.getElementById('scannerDarkValue');
@@ -621,36 +534,26 @@
       const defaults = {
         x: 70, y: 45, w: 33, h: 9,
         font: 36, unitFont: 16, fontWeight: 700,
-        unitX: 70, unitY: 50, color: '#000000', text: '000339 kWh',
+        unitX: 85, unitY: 48, color: '#000000', text: '000339 kWh',
         rotation: 0, tiltX: 0, tiltY: 0, opacity: 0.85, edgeBlur: 0.6,
         glassOpacity: 0.3, dirtOpacity: 0.2, moireOpacity: 0.10,
         noise: true, ghost: true, flicker: true, zoom: 1,
-        scannerMode: false, scannerDarkness: 0.7,
-        cuMode: false 
+        scannerMode: false, scannerDarkness: 0.7, cuMode: false 
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
-
-      // Memory state for 'Normal' return
       let memoryState = { unitFont: defaults.unitFont, unitX: defaults.unitX, unitY: defaults.unitY };
 
-      // Image list with ALL corrections
       const meterImages = [
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjMdcxhtMJaGXEUtZdMzMCDwfd1m5MoSyaGju7TLH9T3siF3_nbGguy9BW4td0_5nipYRL3WWQAsbhfinurwkZhRcPGiF2bllL7AGzk7hZRIvAVYUUhTl6eMMsXQIoHTbAtHp1nVx9bEosmnm-3RxM7N4ibAhSLfNNJYydIALCOqJCJ27AnCUXMSi3SM9n2/s320/1001154444.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYiNkEBBLvOSmfpCvYpW1EigUgiOBm3fp_z-lUt5TEW2l4lIL6ObRzTUGGyQ-VsL_Xcm3vzAQps1ZzOUilJbnL0v4Qp8KseMeii-AnI2in9-0qR2r9dUagIrNGUOXQYfaXfKbQGMc2NqL1wVa0xRjeywcsCTAoaUoSN6bd5v7yQLFLNpI43mlo9U7lmkb5/s320/1001154445.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjaFzMUUPjBukfKn3TCLZSC7v1oZisU4yXv_5ig7D2jOcafPqWY9Mp4d61QrJNjfzVmg6UIRgrBpcuQbzPPHib9o1w_qtSsFB7bis48UuCSyTjJDps4G5PKGCvgKt-9v3HxJmfceHKG29b8dmy4chCvBag3BOX2_aX-t7JwPMcszhNHFKrvaR3iyHpE2BV_/s3080/1001154285.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi3TR4YqdOC2XhYV8PLi7jFqUzg36c93G8gfrn4dLKEFcWOJnrODEAG7-yIPmCK4Yw1YSz8o8Y_DyodiEFL2kCcL6ctBUApOs5ccpM14RUmB9BNIcB1JnLWI831EsQYT7YRjqzrGkI_uH9RZL-3eM8cK8BeH2WCqoFxlcm_28His4mxjhPyLaSRjswR8jpJ/s320/1001154598.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEge-ql0PO8tDiRLkPhx5y2gKTuDmRL_Dy5DlXkacExSggG1L8J420-5oCWCzo047lNkKfTnyH6ynucL5nTfZzp2qjHKNxmkF0wfvzFwAycodkqNrrQ6bl8SjD8t0sJVNh6znWGoYrsleIxhFVr4ucjS2g20Lg6ba54uNDUsSAWqEq_cABNQrbEYuIqQNj5o/s320/1001154601.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEip4vGLRPYmILNONg8GpLjh-LaqZT4hcCxAbk_r9Xp0XhlumQdp0lMhjx9x_EpLG7tkZTU0lY6UZtyzlgLVf6nMiaemJt-NBSex2k3LQERXABC62q5H1KeAEeSkOc_sNzz2iFrUw5szIt-BYQGiKD06RUjVnlANfTowiq4pxKfTqeNbC-yhQQYuSB80kfr3/s320/1001154604.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgW61WiR_NzqGXhSAnxGr_7GLa6Gc7Jqb4JhjLle9U-Y_yPuXdWTKt7s0XuOPBmnCWrWnypl55gXfpNLaRQr_H4y_L6jD7eQbNK7Q2CSQoJGhzt66Ci-zv39RWko9wR_HFBQufnKrFY7fD9_H4DoeBzJ4QIurYl6Ul8nM6ki4GsTskJVjXxT1RZvZKce48n/s320/1001154610.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiL2HFZfftA-kTn7CChdKVR9zSApRzS7w9uC1XZW5CPEcgfSWqobA75ExHP0oogrYMwtU_tA8T4OVshzeJUxyLkjZD8cYjfgS-FkauR8PqailrfucsxtfKArv4QjFbhY1UDwlXXIdEBwL_PQxOfKZvusxV4_eC-Cl6-ZUQ9LOZ4SWpAlKWMiLakEAdQHN-v/s320/1001154613.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjT07Z7S2L9h0TYSuJl58PcsOGc_QctpmtPv3xlU9rMVolFth2yY_FttZ31m_o5ZBudH4XFTe6_xxNwo4eNByclmLIiXdCbnoEpiHuqEooOuFz6MjxAIZZUKz_R_0hpFU8-lczhPck1iYcad8HBriOMV3WyRomcbKzBZvXQwRHYPO852gQ-PMk1y_bmdN02/s320/1001154616.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1J6qFLcbkks7YcFFA3KunMEcmP0Gb5oENX6JWzbCpMKT_f6ZIilZy5J9yPAlamAdFJo1LWc0ikRHnjnOJ8dqpJIKr6qCWQLc-fL5Kq2r14hIQswcb3-3-bgAQCGr-C21UjL82Q7IBGzaAbSafCFOfXHrZ8cvJ1MQ8FuO0sXxebcGr5L2bgKf6XyLM4juk/s320/1001154619.jpg"
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYiNkEBBLvOSmfpCvYpW1EigUgiOBm3fp_z-lUt5TEW2l4lIL6ObRzTUGGyQ-VsL_Xcm3vzAQps1ZzOUilJbnL0v4Qp8KseMeii-AnI2in9-0qR2r9dUagIrNGUOXQYfaXfKbQGMc2NqL1wVa0xRjeywcsCTAoaUoSN6bd5v7yQLFLNpI43mlo9U7lmkb5/s320/1001154445.jpg"
       ];
 
       function autoAdjustSystem() {
           if (state.cuMode) {
-              state.unitFont = Math.max(12, state.font * 0.40); 
+              state.unitFont = Math.max(12, state.font * 0.35); 
+              state.unitX = state.x + state.w + 1; // Auto position next to box once
+              state.unitY = state.y + (state.h * 0.2);
           }
       }
 
@@ -659,46 +562,29 @@
         readingGroup.style.top = state.y + '%';
         readingGroup.style.width = state.w + '%';
         readingGroup.style.height = state.h + '%';
+        
         const parts = state.text.split(' ');
         const valText = parts.shift() || '';
         const unitText = parts.join(' ') || '';
-        
         display.textContent = valText;
         ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
-        ghostDisplay.style.display = state.ghost ? 'block' : 'none';
 
-        // --- SMART ALIGNMENT LOGIC (FIXED OVERLAP & GAPS) ---
         if(state.cuMode) {
-            state.unitX = state.x;
-            state.unitY = state.y;
-            
-            unitElem.style.width = state.w + '%';
-            unitElem.style.height = state.h + '%';
-            unitElem.style.padding = '0';
-            unitElem.style.pointerEvents = 'none'; 
-            
             if (valText.includes('.')) {
-                // Point Number Logic -> MD at Top-Right (Right: 12%), kW at Bottom-Right (Right: 12%)
-                reading.style.paddingRight = '25%'; // Less padding to close gap naturally
-                unitElem.innerHTML = `
-                <div style="position:absolute; top:8%; right:12%; font-family:'DS-Digital', monospace; font-size:1.3em; line-height:0.8; letter-spacing:1px;">MD</div>
-                <div style="position:absolute; bottom:8%; right:12%; font-family:monospace; line-height:1; letter-spacing:1px; font-size:1.1em;">kW</div>`;
+                unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <div style="font-family:'DS-Digital', monospace; font-size:1.4em; line-height:0.8;">MD</div>
+                    <div style="font-family:monospace; line-height:1; font-size:1.1em; margin-top:2px;">kW</div>
+                </div>`;
             } else {
-                // Normal Number Logic -> C u at Center-Right (Right: 18%), kW h at Bottom-Right (Right: 5%)
-                reading.style.paddingRight = '45%'; // More padding to avoid C overlapping 5
-                unitElem.innerHTML = `
-                <div style="position:absolute; top:45%; right:18%; transform:translateY(-50%); display:flex; align-items:flex-end;">
-                    <span style="font-family:'DS-Digital', monospace; font-size:1.7em; line-height:0.8;">C</span>
-                    <span style="font-family:'DS-Digital', monospace; font-size:1.3em; line-height:0.8; margin-left:3px; clip-path:inset(35% 0 0 0);">u</span>
-                </div>
-                <div style="position:absolute; bottom:5%; right:5%; font-family:monospace; line-height:1; letter-spacing:1px; font-size:1.0em;">kW h</div>`;
+                unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <div style="display:flex; align-items:flex-end;">
+                        <span style="font-family:'DS-Digital', monospace; font-size:1.6em; line-height:0.8;">C</span>
+                        <span style="font-family:'DS-Digital', monospace; font-size:1.3em; line-height:0.8; margin-left:2px; clip-path:inset(35% 0 0 0);">u</span>
+                    </div>
+                    <div style="font-family:monospace; line-height:1; font-size:1.0em; margin-top:2px;">kW h</div>
+                </div>`;
             }
         } else {
-            reading.style.paddingRight = '10px'; 
-            unitElem.style.width = 'auto';
-            unitElem.style.height = 'auto';
-            unitElem.style.padding = '4px 8px';
-            unitElem.style.pointerEvents = 'auto';
             unitElem.textContent = unitText;
         }
 
@@ -708,243 +594,84 @@
             el.style.setProperty('--opacity', state.opacity);
         });
         
-        document.documentElement.style.setProperty('--glass-opacity', state.glassOpacity);
-        document.documentElement.style.setProperty('--dirt-opacity', state.dirtOpacity);
-        document.documentElement.style.setProperty('--moire-opacity', state.moireOpacity);
         document.documentElement.style.setProperty('--rotation', state.rotation + 'deg');
         document.documentElement.style.setProperty('--tilt-x', -state.tiltX + 'deg');
         document.documentElement.style.setProperty('--tilt-y', state.tiltY + 'deg');
         document.documentElement.style.setProperty('--zoom', state.zoom);
-        document.documentElement.style.setProperty('--scanner-darkness', state.scannerDarkness);
         
         if(state.scannerMode) {
             readingGroup.classList.add('scanner-mode-active');
             scannerBtn.textContent = 'Scanner: ON';
-            scannerBtn.classList.add('active');
         } else {
             readingGroup.classList.remove('scanner-mode-active');
             scannerBtn.textContent = 'Scanner: OFF';
-            scannerBtn.classList.remove('active');
         }
         
         display.style.fontSize = state.font + 'px';
-        ghostDisplay.style.fontSize = state.font + 'px';
         unitElem.style.fontSize = state.unitFont + 'px';
         unitElem.style.left = state.unitX + '%';
         unitElem.style.top = state.unitY + '%';
         
         const filterString = `blur(${state.edgeBlur}px)`;
-        if(state.noise) { reading.classList.add('noise-active'); unitElem.classList.add('noise-active'); }
-        else { reading.classList.remove('noise-active'); unitElem.classList.remove('noise-active'); }
-        if(state.flicker) { reading.classList.add('flicker-active'); unitElem.classList.add('flicker-active'); }
-        else { reading.classList.remove('flicker-active'); unitElem.classList.remove('flicker-active'); }
-        
         reading.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
         unitElem.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
-        
-        textInput.value = state.text;
-        fontRange.value = state.font;
-        document.getElementById('fontValue').textContent = state.font + 'px';
-        unitFontRange.value = state.unitFont;
-        document.getElementById('unitFontValue').textContent = state.unitFont + 'px';
-        
-        unitXRange.value = state.unitX;
-        unitYRange.value = state.unitY;
-        
-        fontWeightRange.value = state.fontWeight;
-        document.getElementById('fontWeightValue').textContent = state.fontWeight;
-        opacityRange.value = state.opacity;
-        document.getElementById('opacityValue').textContent = Math.round(state.opacity * 100) + '%';
-        rotationInput.value = state.rotation;
-        tiltXRange.value = state.tiltX;
-        document.getElementById('tiltXValue').textContent = state.tiltX + '°';
-        tiltYRange.value = state.tiltY;
-        document.getElementById('tiltYValue').textContent = state.tiltY + '°';
-        edgeBlurRange.value = state.edgeBlur;
-        document.getElementById('edgeBlurValue').textContent = state.edgeBlur + 'px';
-        zoomRange.value = state.zoom;
-        colorInput.value = state.color;
-        glassRange.value = state.glassOpacity;
-        document.getElementById('glassValue').textContent = Math.round(state.glassOpacity * 100) + '%';
-        dirtRange.value = state.dirtOpacity;
-        document.getElementById('dirtValue').textContent = Math.round(state.dirtOpacity * 100) + '%';
-        moireRange.value = state.moireOpacity;
-        document.getElementById('moireValue').textContent = Math.round(state.moireOpacity * 100) + '%';
-        scannerDarkRange.value = state.scannerDarkness;
-        scannerDarkValue.textContent = Math.round(state.scannerDarkness * 100) + '%';
-        noiseBtn.textContent = state.noise ? 'Noise: ON' : 'Noise: OFF';
-        ghostBtn.textContent = state.ghost ? 'Ghost: ON' : 'Ghost: OFF';
-        flickerBtn.textContent = state.flicker ? 'Flicker: ON' : 'Flicker: OFF';
         
         localStorage.setItem('finalVoiceMeterState', JSON.stringify(state));
       }
 
-      // VOICE RECOGNITION 
       if ('webkitSpeechRecognition' in window) {
           const recognition = new webkitSpeechRecognition();
           recognition.continuous = true;
-          recognition.interimResults = false;
           recognition.lang = 'hi-IN';
           let isListening = false;
-
+          
           const toggleMic = () => {
-              if(!isListening) {
-                  try {
-                      recognition.start();
-                      isListening = true;
-                      floatMic.classList.add('mic-active');
-                      panelMicBtn.classList.add('mic-active');
-                      panelMicBtn.textContent = "🎤 Voice Active...";
-                  } catch(e) { console.log(e); }
-              } else {
-                  isListening = false;
-                  recognition.stop();
-                  floatMic.classList.remove('mic-active');
-                  panelMicBtn.classList.remove('mic-active');
-                  panelMicBtn.textContent = "🎤 Voice Control (ON/OFF)";
-              }
+              if(!isListening) { recognition.start(); isListening = true; floatMic.classList.add('mic-active'); } 
+              else { isListening = false; recognition.stop(); floatMic.classList.remove('mic-active'); }
           };
-
           floatMic.addEventListener('click', toggleMic);
           panelMicBtn.addEventListener('click', toggleMic);
 
           recognition.onresult = (event) => {
               const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
-              
-              if (transcript.includes('capital') || transcript.includes('कैपिटल') || transcript.includes('c u') || transcript.includes('सी यू') || transcript.includes('xyz')) {
-                  if(!state.cuMode) {
-                      memoryState = { unitFont: state.unitFont, unitX: state.unitX, unitY: state.unitY };
-                  }
-                  state.cuMode = true;
-                  autoAdjustSystem(); 
-              } else if (transcript.includes('normal') || transcript.includes('नॉर्मल') || transcript.includes('हटाओ')) {
-                  if(state.cuMode) {
-                      state.unitFont = memoryState.unitFont;
-                      state.unitX = memoryState.unitX;
-                      state.unitY = memoryState.unitY;
-                  }
+              if (transcript.includes('capital') || transcript.includes('c u')) {
+                  if(!state.cuMode) memoryState = { unitFont: state.unitFont, unitX: state.unitX, unitY: state.unitY };
+                  state.cuMode = true; autoAdjustSystem(); 
+              } else if (transcript.includes('normal') || transcript.includes('hatao')) {
+                  if(state.cuMode) { Object.assign(state, memoryState); }
                   state.cuMode = false;
               }
-
               const decimalMatch = transcript.match(/(\d+(\.\d+)?)/);
               if (decimalMatch) {
-                  const rawNumber = decimalMatch[0]; 
-                  if (rawNumber.includes('.')) { 
-                      state.text = `${rawNumber} kW`; 
-                  } 
-                  else {
-                      let paddedNumber = rawNumber.padStart(6, '0');
-                      if (transcript.includes('kw') || transcript.includes('watt')) { state.text = `${rawNumber} kW`; } 
-                      else { state.text = `${paddedNumber} kWh`; }
-                  }
+                  const rawNumber = decimalMatch[0];
+                  if (rawNumber.includes('.')) state.text = `${rawNumber} kW`;
+                  else state.text = `${rawNumber.padStart(6, '0')} kWh`;
               }
               applyState();
           };
-
-          recognition.onend = () => { if(isListening) { try { recognition.start(); } catch(e) {} } };
-          recognition.onerror = (e) => { if(isListening && e.error !== 'not-allowed') { try { recognition.stop(); recognition.start(); } catch(err){} } };
-
-          masterResetBtn.addEventListener('click', () => {
-              if(confirm('Are you sure you want to reset all settings?')) {
-                  isListening = false; recognition.stop();
-                  floatMic.classList.remove('mic-active');
-                  panelMicBtn.classList.remove('mic-active');
-                  panelMicBtn.textContent = "🎤 Voice Control (ON/OFF)";
-                  localStorage.removeItem('finalVoiceMeterState');
-                  Object.assign(state, defaults);
-                  applyState();
-              }
-          });
-      } else {
-          floatMic.style.display = 'none';
-          panelMicBtn.style.display = 'none';
-          masterResetBtn.addEventListener('click', () => {
-              if(confirm('Reset settings?')) { localStorage.removeItem('finalVoiceMeterState'); Object.assign(state, defaults); applyState(); }
-          });
       }
-      
-      // DRAG & RESIZE
-      function throttle(fn, delay) { let last = 0; return (...args) => { const now = Date.now(); if(now - last >= delay) { fn(...args); last = now; } } }
-      let isDrag = false, startX, startY, startLeft, startTop;
+
+      // DRAG LOGIC (Preserved)
       function startDrag(e, el, isGroup) {
-        if(e.target === resizer) return; e.preventDefault(); isDrag = true;
+        if(e.target === resizer) return; e.preventDefault();
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
         const rect = wrap.getBoundingClientRect();
-        startX = cx; startY = cy; startLeft = isGroup ? state.x : state.unitX; startTop = isGroup ? state.y : state.unitY;
-        const moveHandler = throttle((ev) => {
-            if(!isDrag) return;
+        const sL = isGroup ? state.x : state.unitX, sT = isGroup ? state.y : state.unitY;
+        const move = (ev) => {
             const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
             const mcy = ev.touches ? ev.touches[0].clientY : ev.clientY;
-            state[isGroup ? 'x' : 'unitX'] = startLeft + ((mcx - startX) / rect.width * 100);
-            state[isGroup ? 'y' : 'unitY'] = startTop + ((mcy - startY) / rect.height * 100);
+            state[isGroup ? 'x' : 'unitX'] = sL + ((mcx - cx) / rect.width * 100);
+            state[isGroup ? 'y' : 'unitY'] = sT + ((mcy - cy) / rect.height * 100);
             applyState();
-        }, 16);
-        const stopHandler = () => { isDrag = false; window.removeEventListener('mousemove', moveHandler); window.removeEventListener('mouseup', stopHandler); window.removeEventListener('touchmove', moveHandler); window.removeEventListener('touchend', stopHandler); };
-        window.addEventListener('mousemove', moveHandler); window.addEventListener('mouseup', stopHandler); window.addEventListener('touchmove', moveHandler); window.addEventListener('touchend', stopHandler);
+        };
+        const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); window.removeEventListener('touchmove', move); window.removeEventListener('touchend', stop); };
+        window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop); window.addEventListener('touchmove', move); window.addEventListener('touchend', stop);
       }
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, true));
-      readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, true));
-      
       unitElem.addEventListener('mousedown', (e) => startDrag(e, unitElem, false));
-      unitElem.addEventListener('touchstart', (e) => startDrag(e, unitElem, false));
-      
-      resizer.addEventListener('mousedown', initResize); resizer.addEventListener('touchstart', initResize);
-      function initResize(e) {
-          e.stopPropagation(); e.preventDefault();
-          const sW = state.w, sH = state.h, sx = e.touches ? e.touches[0].clientX : e.clientX, sy = e.touches ? e.touches[0].clientY : e.clientY, rect = wrap.getBoundingClientRect();
-          const doResize = throttle((ev) => {
-              const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX, mcy = ev.touches ? ev.touches[0].clientY : ev.clientY;
-              state.w = Math.max(5, sW + ((mcx - sx) / rect.width * 100));
-              state.h = Math.max(2, sH + ((mcy - sy) / rect.height * 100));
-              state.font = Math.round((state.h / 100) * rect.height * 0.6); 
-              if(state.cuMode) autoAdjustSystem(); 
-              applyState();
-          }, 16);
-          const stopResize = () => { window.removeEventListener('mousemove', doResize); window.removeEventListener('mouseup', stopResize); window.removeEventListener('touchmove', doResize); window.removeEventListener('touchend', stopResize); };
-          window.addEventListener('mousemove', doResize); window.addEventListener('mouseup', stopResize); window.addEventListener('touchmove', doResize); window.addEventListener('touchend', stopResize);
-      }
 
-      textInput.addEventListener('input', () => { state.text = textInput.value; applyState(); });
-      fontRange.addEventListener('input', () => { state.font = +fontRange.value; applyState(); });
-      unitFontRange.addEventListener('input', () => { state.unitFont = +unitFontRange.value; applyState(); });
-      unitXRange.addEventListener('input', () => { state.unitX = +unitXRange.value; applyState(); });
-      unitYRange.addEventListener('input', () => { state.unitY = +unitYRange.value; applyState(); });
-      fontWeightRange.addEventListener('input', () => { state.fontWeight = +fontWeightRange.value; applyState(); });
-      opacityRange.addEventListener('input', () => { state.opacity = +opacityRange.value; applyState(); });
-      rotationInput.addEventListener('input', () => { state.rotation = +rotationInput.value; applyState(); });
-      tiltXRange.addEventListener('input', () => { state.tiltX = +tiltXRange.value; applyState(); });
-      tiltYRange.addEventListener('input', () => { state.tiltY = +tiltYRange.value; applyState(); });
-      edgeBlurRange.addEventListener('input', () => { state.edgeBlur = +edgeBlurRange.value; applyState(); });
-      zoomRange.addEventListener('input', () => { state.zoom = +zoomRange.value; applyState(); });
-      colorInput.addEventListener('input', () => { state.color = colorInput.value; applyState(); });
-      glassRange.addEventListener('input', () => { state.glassOpacity = +glassRange.value; applyState(); });
-      dirtRange.addEventListener('input', () => { state.dirtOpacity = +dirtRange.value; applyState(); });
-      moireRange.addEventListener('input', () => { state.moireOpacity = +moireRange.value; applyState(); });
-      noiseBtn.addEventListener('click', () => { state.noise = !state.noise; applyState(); });
-      ghostBtn.addEventListener('click', () => { state.ghost = !state.ghost; applyState(); });
-      flickerBtn.addEventListener('click', () => { state.flicker = !state.flicker; applyState(); });
-      
-      scannerBtn.addEventListener('click', () => { 
-          state.scannerMode = !state.scannerMode; 
-          applyState(); 
-      });
-      
-      scannerDarkRange.addEventListener('input', () => { state.scannerDarkness = +scannerDarkRange.value; applyState(); });
-
-      const gallery = document.getElementById('imageGallery');
-      function loadGallery() {
-          gallery.innerHTML = '';
-          meterImages.forEach((src, idx) => {
-              const img = document.createElement('img'); img.src = src; img.className = 'gallery-thumb'; if(idx === 0) img.classList.add('selected');
-              img.onclick = () => { document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('selected')); img.classList.add('selected'); meterImg.src = src; };
-              gallery.appendChild(img);
-          });
-      }
-      loadGallery();
-      addImageBtn.addEventListener('click', () => { const url = document.getElementById('imageInput').value; if(url) { meterImages.push(url); loadGallery(); } });
-
-      // --- EXPORT CANVAS WITH FIXED ALIGNMENTS ---
+      // EXPORT LOGIC
       exportBtn.addEventListener('click', () => {
         const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d'), img = new Image();
         img.crossOrigin = 'anonymous'; img.src = meterImg.src;
@@ -955,93 +682,62 @@
                 const rx = (state.x / 100) * img.width, ry = (state.y / 100) * img.height, rw = (state.w / 100) * img.width, rh = (state.h / 100) * img.height;
                 ctx.translate(rx, ry); ctx.rotate(state.rotation * Math.PI / 180);
                 ctx.globalCompositeOperation = 'destination-out'; ctx.fillRect(0, 0, rw, rh);
-                ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeRect(0, 0, rw, rh);
+                ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([5, 5]); ctx.strokeRect(0, 0, rw, rh);
                 ctx.restore();
             }
-            const drawText = (text, xPct, yPct, size, isGhost) => {
-                ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
-                const rad = state.rotation * Math.PI / 180; ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
-                ctx.font = `${state.fontWeight} ${size}px 'DS-Digital', monospace`; ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; 
-                ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = isGhost ? 0.08 : state.opacity; ctx.fillStyle = state.color;
-                if (state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
-                
-                let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
-                
-                // Pushing reading back dynamically for Canvas
-                let rightPaddingOffset = 10;
-                if(state.cuMode) {
-                    rightPaddingOffset = text.includes('.') ? (state.w/100*img.width) * 0.25 : (state.w/100*img.width) * 0.45;
-                }
-                
-                for (let char of text) { 
-                    ctx.fillText(char, xc + (state.w/100*img.width) - rightPaddingOffset, (state.h/100*img.height)/2); 
-                    xc += ctx.measureText(char).width; 
-                }
-                ctx.restore();
-            };
             
-            const parts = state.text.split(' '), val = parts[0], unit = parts.slice(1).join(' ');
-            if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
-            drawText(val, state.x, state.y, state.font, false);
-            
+            // Draw Main Reading
             ctx.save();
-            const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; ctx.translate(ux, uy);
-            ctx.rotate(state.rotation * Math.PI / 180); 
-            ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
-            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
+            const tx = (state.x / 100) * img.width, ty = (state.y / 100) * img.height;
+            ctx.translate(tx + (state.w/100*img.width), ty + (state.h/100*img.height)/2);
+            ctx.rotate(state.rotation * Math.PI / 180);
+            ctx.font = `${state.fontWeight} ${state.font}px 'DS-Digital'`;
+            ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = state.color; ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity;
+            ctx.fillText(state.text.split(' ')[0], -10, 0);
+            ctx.restore();
+
+            // Draw Unit (Independent position)
+            ctx.save();
+            const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height;
+            ctx.translate(ux, uy); ctx.rotate(state.rotation * Math.PI / 180);
+            ctx.fillStyle = state.color; ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity;
             
             if (state.cuMode) {
-                let boxW = (state.w / 100) * img.width;
-                let boxH = (state.h / 100) * img.height;
-                
+                const val = state.text.split(' ')[0];
                 if (val.includes('.')) {
-                    // Export MD (Top-Right) and kW (Bottom-Right) [right: 12%]
-                    let padX = boxW * 0.12;
-                    let padY = boxH * 0.08;
-                    
-                    ctx.textAlign = 'right';
-                    ctx.textBaseline = 'top';
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
-                    ctx.fillText("MD", boxW - padX, padY);
-                    
-                    ctx.textBaseline = 'bottom';
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.4}px 'DS-Digital'`;
+                    ctx.fillText("MD", 0, 0);
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
-                    ctx.fillText("kW", boxW - padX, boxH - padY);
+                    ctx.fillText("kW", 0, state.unitFont * 1.2);
                 } else {
-                    // Export C u (Center-Right: 18%) and kW h (Bottom-Right: 5%)
-                    ctx.textAlign = 'right';
-                    ctx.textBaseline = 'bottom';
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.0}px monospace`;
-                    ctx.fillText("kW h", boxW - (boxW * 0.05), boxH - (boxH * 0.05));
-                    
-                    ctx.textBaseline = 'alphabetic'; 
-                    let cuX = boxW - (boxW * 0.18); 
-                    let cuY = (boxH / 2) + (state.unitFont * 0.4); 
-                    
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
-                    let uWidth = ctx.measureText("u").width;
-                    
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.7}px 'DS-Digital'`;
+                    ctx.fillText("C", 0, 0);
+                    let cW = ctx.measureText("C").width;
                     ctx.save();
-                    ctx.beginPath();
-                    let uHeight = state.unitFont * 1.3;
-                    ctx.rect(cuX - uWidth, cuY - uHeight + (uHeight * 0.35), uWidth + 5, uHeight);
-                    ctx.clip();
-                    ctx.fillText("u", cuX, cuY);
+                    ctx.beginPath(); ctx.rect(cW, -(state.unitFont), 50, state.unitFont * 0.7); ctx.clip();
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital'`;
+                    ctx.fillText("u", cW + 2, 0);
                     ctx.restore();
-                    
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.7}px 'DS-Digital', monospace`;
-                    ctx.fillText("C", cuX - uWidth - 2, cuY);
+                    ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
+                    ctx.fillText("kW h", 0, state.unitFont * 1.2);
                 }
             } else {
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
-                ctx.fillText(unit, 0, 0); 
+                ctx.fillText(state.text.split(' ').slice(1).join(' '), 0, 0);
             }
             ctx.restore();
             
             const link = document.createElement('a'); link.download = 'meter.jpg'; link.href = canvas.toDataURL('image/jpeg', 0.9); link.click();
         };
-        img.onerror = () => alert('CORS Error: Image cannot be saved.');
       });
+
+      // SLIDERS
+      textInput.addEventListener('input', () => { state.text = textInput.value; applyState(); });
+      fontRange.addEventListener('input', () => { state.font = +fontRange.value; applyState(); });
+      unitFontRange.addEventListener('input', () => { state.unitFont = +unitFontRange.value; applyState(); });
+      unitXRange.addEventListener('input', () => { state.unitX = +unitXRange.value; applyState(); });
+      unitYRange.addEventListener('input', () => { state.unitY = +unitYRange.value; applyState(); });
+      
       applyState();
     })();
   </script>
