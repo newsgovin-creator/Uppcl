@@ -648,11 +648,11 @@
       ];
 
       function autoAdjustSystem() {
-          if (state.cuMode) {
-              state.unitFont = Math.max(12, state.font * 0.35); 
-              state.unitX = state.x + state.w - (state.w * 0.30); 
-              state.unitY = state.y + (state.h * 0.18);
-          }
+    if (state.cuMode) {
+        state.unitFont = Math.max(12, state.font * 0.35); 
+        state.unitX = state.x + state.w - 4; 
+        state.unitY = state.y + 5;
+    }
       }
 
       function applyState() {
