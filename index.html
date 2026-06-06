@@ -553,11 +553,11 @@
     </div>
     <div class="row">
         <label>Unit X Offset</label>
-        <input id="unitXRange" class="slider" type="range" min="0" max="100" value="70" />
+        <input id="unitXRange" class="slider" type="range" min="0" max="100" value="80" />
     </div>
     <div class="row">
         <label>Unit Y Offset</label>
-        <input id="unitYRange" class="slider" type="range" min="0" max="100" value="50" />
+        <input id="unitYRange" class="slider" type="range" min="0" max="100" value="20" />
     </div>
 
     <div class="section-title">Realism</div>
@@ -838,9 +838,9 @@
 
       function autoAdjustSystem() {
           if (state.cuMode) {
-              state.unitFont = Math.max(12, state.font * 0.45); 
+              state.unitFont = Math.max(12, state.font * 0.35); 
               // FIX: Places unit perfectly INSIDE the right edge of the scanner box.
-              state.unitX = state.x + state.w - 65; 
+              state.unitX = state.x + state.w - 55; 
               state.unitY = state.y + (state.h * 0.1);
           }
       }
