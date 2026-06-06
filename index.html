@@ -838,9 +838,9 @@
 
       function autoAdjustSystem() {
           if (state.cuMode) {
-              state.unitFont = Math.max(12, state.font * 0.35); 
+              state.unitFont = Math.max(12, state.font * 0.45); 
               // FIX: Places unit perfectly INSIDE the right edge of the scanner box.
-              state.unitX = state.x + state.w - 14; 
+              state.unitX = state.x + state.w - 65; 
               state.unitY = state.y + (state.h * 0.1);
           }
       }
