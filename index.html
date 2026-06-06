@@ -680,13 +680,14 @@
                 </div>`;
             } else {
                 // Normal Number Logic -> Show C u / kW h
-                unitElem.innerHTML = `<div style="position:relative; pointer-events:none; text-align:left; display:flex; flex-direction:column; align-items:flex-start;">
-                    <div style="white-space:nowrap; display:flex; align-items:flex-end; margin-bottom:1px;">
-                        <span style="font-family:'DS-Digital', monospace; font-size:1.6em; line-height:0.8;">C</span>
-                        <span style="font-family:'DS-Digital', monospace; font-size:1.25em; line-height:0.8; margin-left:3px; display:inline-block; clip-path:inset(30% 0 0 0);">u</span>
-                    </div>
-                    <div style="font-family:monospace; line-height:1; margin-top:2px; padding-left:0.8em; letter-spacing:1px; font-size:0.95em;">kW h</div>
-                </div>`;
+                unitElem.innerHTML = `<div style="position:absolute; right:5px; bottom:5px; text-align:right; display:flex; flex-direction:column; align-items:flex-end; line-height:0.9;">
+    <div style="display:flex; align-items:flex-end; margin-bottom:5px;">
+        <span style="font-family:'DS-Digital', monospace; font-size:1.6em; line-height:0.8;">C</span>
+        <span style="font-family:'DS-Digital', monospace; font-size:1.25em; line-height:0.8; margin-left:3px; display:inline-block; clip-path:inset(30% 0 0 0);">u</span>
+    </div>
+    <div style="font-family:monospace; line-height:1; font-size:1.2em; display:inline-block; transform:scaleX(1.8); transform-origin:right;">kW h</div>
+</div>`;
+
             }
         } else {
             reading.style.paddingRight = '10px'; 
