@@ -839,8 +839,9 @@
       function autoAdjustSystem() {
           if (state.cuMode) {
               state.unitFont = Math.max(12, state.font * 0.35); 
-              state.unitX = state.x + state.w + 2; 
-              state.unitY = state.y + (state.h * 0.2);
+              // FIX: Places unit perfectly INSIDE the right edge of the scanner box.
+              state.unitX = state.x + state.w - 14; 
+              state.unitY = state.y + (state.h * 0.1);
           }
       }
 
@@ -849,6 +850,7 @@
         readingGroup.style.top = state.y + '%';
         readingGroup.style.width = state.w + '%';
         readingGroup.style.height = state.h + '%';
+        
         const parts = state.text.split(' ');
         const valText = parts.shift() || '';
         const unitText = parts.join(' ') || '';
@@ -857,16 +859,19 @@
         ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
         ghostDisplay.style.display = state.ghost ? 'block' : 'none';
 
-        // --- FIXED: INDEPENDENT DRAGGING ---
-        reading.style.paddingRight = '10px'; 
-        
+        // --- NEW LOGIC: MD/kW vs C u/kWh inside Capital Mode ---
         if(state.cuMode) {
+            // Keep number slightly left inside the scanner box so it doesn't overlap unit
+            reading.style.paddingRight = '30%'; 
+            
             if (valText.includes('.')) {
+                // Point Number Logic -> Show MD / kW
                 unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 0.9;">
                     <div style="font-family:'DS-Digital', monospace; font-size:1.4em;">MD</div>
                     <div style="font-family:monospace; font-size:1.1em; margin-top:2px;">kW</div>
                 </div>`;
             } else {
+                // Normal Number Logic -> Show C u / kW h
                 unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 0.9;">
                     <div style="display:flex; align-items:flex-end; margin-bottom: 2px;">
                         <span style="font-family:'DS-Digital', monospace; font-size:1.7em;">C</span>
@@ -875,16 +880,8 @@
                     <div style="font-family:monospace; font-size:1.0em;">kW h</div>
                 </div>`;
             }
-            // Removed fixed width/height so it's independent
-            unitElem.style.width = 'auto';
-            unitElem.style.height = 'auto';
-            unitElem.style.padding = '4px 8px';
-            unitElem.style.pointerEvents = 'auto'; 
         } else {
-            unitElem.style.width = 'auto';
-            unitElem.style.height = 'auto';
-            unitElem.style.padding = '4px 8px';
-            unitElem.style.pointerEvents = 'auto';
+            reading.style.paddingRight = '10px'; 
             unitElem.textContent = unitText;
         }
 
@@ -893,6 +890,7 @@
             el.style.setProperty('--font-weight', state.fontWeight);
             el.style.setProperty('--opacity', state.opacity);
         });
+        
         document.documentElement.style.setProperty('--glass-opacity', state.glassOpacity);
         document.documentElement.style.setProperty('--dirt-opacity', state.dirtOpacity);
         document.documentElement.style.setProperty('--moire-opacity', state.moireOpacity);
@@ -1048,20 +1046,9 @@
           });
       }
       
-      // DRAG & RESIZE
-      function throttle(fn, delay) { 
-        let last = 0; 
-        return (...args) => { 
-          const now = Date.now(); 
-          if(now - last >= delay) { 
-            fn(...args); 
-            last = now; 
-          } 
-        } 
-      }
-
+      // DRAG & RESIZE (FIXED: SMOOTH DRAGGING)
       let isDrag = false, startX, startY, startLeft, startTop;
-
+      
       function startDrag(e, el, isGroup) {
         if(e.target === resizer) return; 
         e.preventDefault(); 
@@ -1069,26 +1056,39 @@
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
         const rect = wrap.getBoundingClientRect();
+        
         startX = cx; 
         startY = cy; 
         startLeft = isGroup ? state.x : state.unitX; 
         startTop = isGroup ? state.y : state.unitY;
 
-        const moveHandler = throttle((ev) => {
+        // Fast update without reloading filters (No Lag)
+        const moveHandler = (ev) => {
             if(!isDrag) return;
             const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
             const mcy = ev.touches ? ev.touches[0].clientY : ev.clientY;
-            state[isGroup ? 'x' : 'unitX'] = startLeft + ((mcx - startX) / rect.width * 100);
-            state[isGroup ? 'y' : 'unitY'] = startTop + ((mcy - startY) / rect.height * 100);
-            applyState();
-        }, 16);
+            let nx = startLeft + ((mcx - startX) / rect.width * 100);
+            let ny = startTop + ((mcy - startY) / rect.height * 100);
+            
+            el.style.left = nx + '%';
+            el.style.top = ny + '%';
+            
+            if(isGroup) { 
+                state.x = nx; 
+                state.y = ny; 
+            } else { 
+                state.unitX = nx; 
+                state.unitY = ny; 
+            }
+        };
 
         const stopHandler = () => { 
-          isDrag = false; 
-          window.removeEventListener('mousemove', moveHandler); 
-          window.removeEventListener('mouseup', stopHandler); 
-          window.removeEventListener('touchmove', moveHandler); 
-          window.removeEventListener('touchend', stopHandler); 
+            isDrag = false; 
+            window.removeEventListener('mousemove', moveHandler); 
+            window.removeEventListener('mouseup', stopHandler); 
+            window.removeEventListener('touchmove', moveHandler); 
+            window.removeEventListener('touchend', stopHandler); 
+            applyState(); // Save exact position after drop
         };
 
         window.addEventListener('mousemove', moveHandler); 
@@ -1096,7 +1096,7 @@
         window.addEventListener('touchmove', moveHandler); 
         window.addEventListener('touchend', stopHandler);
       }
-
+      
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, true));
       readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, true));
       
@@ -1105,26 +1105,43 @@
       
       resizer.addEventListener('mousedown', initResize); 
       resizer.addEventListener('touchstart', initResize);
-
+      
       function initResize(e) {
           e.stopPropagation(); 
           e.preventDefault();
-          const sW = state.w, sH = state.h, sx = e.touches ? e.touches[0].clientX : e.clientX, sy = e.touches ? e.touches[0].clientY : e.clientY, rect = wrap.getBoundingClientRect();
+          const sW = state.w, sH = state.h;
+          const sx = e.touches ? e.touches[0].clientX : e.clientX;
+          const sy = e.touches ? e.touches[0].clientY : e.clientY;
+          const rect = wrap.getBoundingClientRect();
           
-          const doResize = throttle((ev) => {
-              const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX, mcy = ev.touches ? ev.touches[0].clientY : ev.clientY;
-              state.w = Math.max(5, sW + ((mcx - sx) / rect.width * 100));
-              state.h = Math.max(2, sH + ((mcy - sy) / rect.height * 100));
-              state.font = Math.round((state.h / 100) * rect.height * 0.6); 
-              if(state.cuMode) autoAdjustSystem(); 
-              applyState();
-          }, 16);
+          let isResizing = true;
+
+          const doResize = (ev) => {
+              if(!isResizing) return;
+              const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+              const mcy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+              
+              let newW = Math.max(5, sW + ((mcx - sx) / rect.width * 100));
+              let newH = Math.max(2, sH + ((mcy - sy) / rect.height * 100));
+              
+              readingGroup.style.width = newW + '%';
+              readingGroup.style.height = newH + '%';
+              
+              state.w = newW;
+              state.h = newH;
+              state.font = Math.round((newH / 100) * rect.height * 0.6); 
+              display.style.fontSize = state.font + 'px';
+              ghostDisplay.style.fontSize = state.font + 'px';
+          };
 
           const stopResize = () => { 
-            window.removeEventListener('mousemove', doResize); 
-            window.removeEventListener('mouseup', stopResize); 
-            window.removeEventListener('touchmove', doResize); 
-            window.removeEventListener('touchend', stopResize); 
+              isResizing = false;
+              window.removeEventListener('mousemove', doResize); 
+              window.removeEventListener('mouseup', stopResize); 
+              window.removeEventListener('touchmove', doResize); 
+              window.removeEventListener('touchend', stopResize); 
+              if(state.cuMode) autoAdjustSystem(); 
+              applyState();
           };
 
           window.addEventListener('mousemove', doResize); 
@@ -1176,69 +1193,55 @@
         const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d'), img = new Image();
         img.crossOrigin = 'anonymous'; img.src = meterImg.src;
         img.onload = () => {
-            const z = state.zoom; 
-            canvas.width = img.width * z; 
-            canvas.height = img.height * z; 
-            ctx.scale(z, z); 
-            ctx.drawImage(img, 0, 0);
-
+            const z = state.zoom; canvas.width = img.width * z; canvas.height = img.height * z; ctx.scale(z, z); ctx.drawImage(img, 0, 0);
+            
             if(state.scannerMode) {
-                ctx.save(); 
-                ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; 
-                ctx.fillRect(0,0,img.width, img.height);
+                ctx.save(); ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; ctx.fillRect(0,0,img.width, img.height);
                 const rx = (state.x / 100) * img.width, ry = (state.y / 100) * img.height, rw = (state.w / 100) * img.width, rh = (state.h / 100) * img.height;
-                ctx.translate(rx, ry); 
-                ctx.rotate(state.rotation * Math.PI / 180);
-                ctx.globalCompositeOperation = 'destination-out'; 
-                ctx.fillRect(0, 0, rw, rh);
-                ctx.globalCompositeOperation = 'source-over'; 
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; 
-                ctx.setLineDash([5, 5]); 
-                ctx.lineWidth = 2; 
-                ctx.strokeRect(0, 0, rw, rh);
+                ctx.translate(rx, ry); ctx.rotate(state.rotation * Math.PI / 180);
+                ctx.globalCompositeOperation = 'destination-out'; ctx.fillRect(0, 0, rw, rh);
+                ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeRect(0, 0, rw, rh);
                 ctx.restore();
             }
-
-            // Draw Main Reading
-            ctx.save();
-            const tx = (state.x / 100) * img.width, ty = (state.y / 100) * img.height;
-            ctx.translate(tx + (state.w/100*img.width), ty + (state.h/100*img.height)/2);
-            ctx.rotate(state.rotation * Math.PI / 180);
-            ctx.font = `${state.fontWeight} ${state.font}px 'DS-Digital'`;
-            ctx.textAlign = 'right'; 
-            ctx.textBaseline = 'middle'; 
-            ctx.fillStyle = state.color; 
-            ctx.globalCompositeOperation = 'multiply'; 
-            ctx.globalAlpha = state.opacity;
-            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`;
             
-            const val = state.text.split(' ')[0];
-            let tw = 0; 
-            for(let c of val) tw += ctx.measureText(c).width; 
-            let xc = -tw;
-            for (let char of val) { 
-                ctx.fillText(char, xc - 10, 0); 
-                xc += ctx.measureText(char).width; 
-            }
-            ctx.restore();
-
-            // Draw Unit (Independent position matching HTML)
-            ctx.save();
-            const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height;
-            ctx.translate(ux + 8, uy + 4); 
-            ctx.rotate(state.rotation * Math.PI / 180);
-            ctx.fillStyle = state.color; 
-            ctx.globalCompositeOperation = 'multiply'; 
-            ctx.globalAlpha = state.opacity;
-            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`;
+            const drawText = (text, xPct, yPct, size, isGhost) => {
+                ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
+                const rad = state.rotation * Math.PI / 180; ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
+                ctx.font = `${state.fontWeight} ${size}px 'DS-Digital', monospace`; ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; 
+                ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = isGhost ? 0.08 : state.opacity; ctx.fillStyle = state.color;
+                if (state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
+                
+                let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
+                
+                // Keep number slightly left inside the scanner box for Canvas
+                let rightPaddingOffset = state.cuMode ? (state.w/100*img.width) * 0.30 : 10;
+                
+                for (let char of text) { 
+                    ctx.fillText(char, xc + (state.w/100*img.width) - rightPaddingOffset, (state.h/100*img.height)/2); 
+                    xc += ctx.measureText(char).width; 
+                }
+                ctx.restore();
+            };
             
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-
+            const parts = state.text.split(' '), val = parts[0], unit = parts.slice(1).join(' ');
+            if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
+            drawText(val, state.x, state.y, state.font, false);
+            
+            // Draw Unit EXACTLY where user dragged it
+            ctx.save();
+            const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; 
+            ctx.translate(ux, uy);
+            ctx.rotate(state.rotation * Math.PI / 180); 
+            ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
+            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
+            
             if (state.cuMode) {
                 if (val.includes('.')) {
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.4}px 'DS-Digital', monospace`;
                     let mdW = ctx.measureText("MD").width;
+                    
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
                     let kwW = ctx.measureText("kW").width;
                     let maxW = Math.max(mdW, kwW);
@@ -1249,6 +1252,8 @@
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
                     ctx.fillText("kW", maxW - kwW, state.unitFont * 1.2);
                 } else {
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.7}px 'DS-Digital', monospace`;
                     let cW = ctx.measureText("C").width;
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
@@ -1276,14 +1281,11 @@
                 }
             } else {
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
-                ctx.fillText(state.text.split(' ').slice(1).join(' '), 0, 0);
+                ctx.fillText(unit, 0, 0); 
             }
             ctx.restore();
             
-            const link = document.createElement('a'); 
-            link.download = 'meter.jpg'; 
-            link.href = canvas.toDataURL('image/jpeg', 0.9); 
-            link.click();
+            const link = document.createElement('a'); link.download = 'meter.jpg'; link.href = canvas.toDataURL('image/jpeg', 0.9); link.click();
         };
         img.onerror = () => alert('CORS Error: Image cannot be saved.');
       });
