@@ -33,9 +33,17 @@
       box-sizing: border-box;
       overflow-x: hidden;
     }
-    #svgFilters { height: 0; width: 0; position: absolute; visibility: hidden; }
+    #svgFilters { 
+      height: 0; 
+      width: 0; 
+      position: absolute; 
+      visibility: hidden; 
+    }
 
-    .col { width: 100%; max-width: 600px; }
+    .col { 
+      width: 100%; 
+      max-width: 600px; 
+    }
     
     .meter-wrap {
       position: relative;
@@ -67,7 +75,10 @@
     /* Layers */
     .dirt-overlay, .glass-overlay, .moire-overlay {
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%;
       pointer-events: none;
     }
     
@@ -220,36 +231,142 @@
     .camouflaged { filter: blur(0.6px); }
     .merged.noise-active.camouflaged { filter: url(#noiseFilter) blur(0.6px); }
 
-    .image-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: center; }
-    .gallery-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
-    .gallery-thumb:hover, .gallery-thumb.selected { border-color: #0f0; }
+    .image-gallery { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 10px; 
+      margin-top: 10px; 
+      justify-content: center; 
+    }
+    .gallery-thumb { 
+      width: 60px; 
+      height: 60px; 
+      object-fit: cover; 
+      border-radius: 5px; 
+      cursor: pointer; 
+      border: 2px solid transparent; 
+    }
+    .gallery-thumb:hover, .gallery-thumb.selected { 
+      border-color: #0f0; 
+    }
     
-    .panel { background: #071322; padding: 12px; border-radius: 10px; width: 100%; max-width: 600px; box-shadow: 0 8px 28px rgba(0,0,0,0.6); margin-top: 20px; }
-    .panel h3 { margin: 0 0 8px 0; font-size: 18px; color: #dfffe3; }
-    .row { margin: 8px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    label { font-size: 13px; color: #bcd8c6; flex: 1; }
-    input, button { font-size: 14px; padding: 8px; border-radius: 4px; border: 1px solid #333; background: #051018; color: #fff; }
-    button { background: #39c28a; color: #04211a; cursor: pointer; border: none; }
-    button.ghost { background: transparent; color: #9ebaa7; border: 1px solid rgba(255,255,255,0.1); }
+    .panel { 
+      background: #071322; 
+      padding: 12px; 
+      border-radius: 10px; 
+      width: 100%; 
+      max-width: 600px; 
+      box-shadow: 0 8px 28px rgba(0,0,0,0.6); 
+      margin-top: 20px; 
+    }
+    .panel h3 { 
+      margin: 0 0 8px 0; 
+      font-size: 18px; 
+      color: #dfffe3; 
+    }
+    .row { 
+      margin: 8px 0; 
+      display: flex; 
+      gap: 8px; 
+      align-items: center; 
+      flex-wrap: wrap; 
+    }
+    label { 
+      font-size: 13px; 
+      color: #bcd8c6; 
+      flex: 1; 
+    }
+    input, button { 
+      font-size: 14px; 
+      padding: 8px; 
+      border-radius: 4px; 
+      border: 1px solid #333; 
+      background: #051018; 
+      color: #fff; 
+    }
+    button { 
+      background: #39c28a; 
+      color: #04211a; 
+      cursor: pointer; 
+      border: none; 
+    }
+    button.ghost { 
+      background: transparent; 
+      color: #9ebaa7; 
+      border: 1px solid rgba(255,255,255,0.1); 
+    }
     
-    button.scanner-btn { background: #4285f4; color: white; border: none; }
-    button.scanner-btn.active { background: #ea4335; box-shadow: 0 0 10px #ea4335; }
+    button.scanner-btn { 
+      background: #4285f4; 
+      color: white; 
+      border: none; 
+    }
+    button.scanner-btn.active { 
+      background: #ea4335; 
+      box-shadow: 0 0 10px #ea4335; 
+    }
 
-    button.danger { background: #ff4444; color: white; border: none; font-weight: bold; width: 100%; margin-bottom: 10px; }
-    button.danger:hover { background: #cc0000; }
+    button.danger { 
+      background: #ff4444; 
+      color: white; 
+      border: none; 
+      font-weight: bold; 
+      width: 100%; 
+      margin-bottom: 10px; 
+    }
+    button.danger:hover { 
+      background: #cc0000; 
+    }
     
-    button.mic-action-btn { background: #333; color: white; border: 1px solid #555; width: 100%; margin-bottom: 5px; font-weight: bold; }
+    button.mic-action-btn { 
+      background: #333; 
+      color: white; 
+      border: 1px solid #555; 
+      width: 100%; 
+      margin-bottom: 5px; 
+      font-weight: bold; 
+    }
 
-    .slider { width: 100%; height: 6px; -webkit-appearance: none; background: #333; border-radius: 3px; }
-    .slider::-webkit-slider-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; -webkit-appearance: none; cursor: pointer; }
-    .slider-value { color: #fff; min-width: 50px; text-align: right; font-size: 12px; }
+    .slider { 
+      width: 100%; 
+      height: 6px; 
+      -webkit-appearance: none; 
+      background: #333; 
+      border-radius: 3px; 
+    }
+    .slider::-webkit-slider-thumb { 
+      width: 16px; 
+      height: 16px; 
+      border-radius: 50%; 
+      background: #fff; 
+      -webkit-appearance: none; 
+      cursor: pointer; 
+    }
+    .slider-value { 
+      color: #fff; 
+      min-width: 50px; 
+      text-align: right; 
+      font-size: 12px; 
+    }
     
-    .section-title { width: 100%; color: #0f0; font-size: 12px; margin-top: 10px; border-bottom: 1px solid #333; padding-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+    .section-title { 
+      width: 100%; 
+      color: #0f0; 
+      font-size: 12px; 
+      margin-top: 10px; 
+      border-bottom: 1px solid #333; 
+      padding-bottom: 2px; 
+      text-transform: uppercase; 
+      letter-spacing: 1px; 
+    }
 
     /* --- LOGIN OVERLAY CSS --- */
     #login-overlay {
       position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%;
       background: rgba(0, 0, 0, 0.95);
       z-index: 999999;
       display: flex;
@@ -317,7 +434,12 @@
       font-size: 16px;
     }
     #waiting-status {
-      display: none; color: #ffeb3b; margin-top: 15px; font-family: Arial; font-size: 15px; line-height: 1.6;
+      display: none; 
+      color: #ffeb3b; 
+      margin-top: 15px; 
+      font-family: Arial; 
+      font-size: 15px; 
+      line-height: 1.6;
     }
   </style>
 </head>
@@ -402,35 +524,102 @@
     </div>
 
     <div class="section-title">Environment</div>
-    <div class="row"><label>Moiré Pattern</label><input id="moireRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.10" /><span class="slider-value" id="moireValue">10%</span></div>
-    <div class="row"><label>Glass Reflection</label><input id="glassRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.3" /><span class="slider-value" id="glassValue">30%</span></div>
-    <div class="row"><label>Dust & Scratches</label><input id="dirtRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.2" /><span class="slider-value" id="dirtValue">20%</span></div>
+    <div class="row">
+        <label>Moiré Pattern</label>
+        <input id="moireRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.10" />
+        <span class="slider-value" id="moireValue">10%</span>
+    </div>
+    <div class="row">
+        <label>Glass Reflection</label>
+        <input id="glassRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.3" />
+        <span class="slider-value" id="glassValue">30%</span>
+    </div>
+    <div class="row">
+        <label>Dust & Scratches</label>
+        <input id="dirtRange" class="slider" type="range" min="0" max="1" step="0.05" value="0.2" />
+        <span class="slider-value" id="dirtValue">20%</span>
+    </div>
 
     <div class="section-title">Size & Position</div>
-    <div class="row"><label>Font Size</label><input id="fontRange" class="slider" type="range" min="10" max="100" value="48" /><span class="slider-value" id="fontValue">48px</span></div>
-    <div class="row"><label>Unit Size</label><input id="unitFontRange" class="slider" type="range" min="8" max="50" value="18" /><span class="slider-value" id="unitFontValue">18px</span></div>
-    <div class="row"><label>Unit X Offset</label><input id="unitXRange" class="slider" type="range" min="0" max="100" value="70" /></div>
-    <div class="row"><label>Unit Y Offset</label><input id="unitYRange" class="slider" type="range" min="0" max="100" value="50" /></div>
+    <div class="row">
+        <label>Font Size</label>
+        <input id="fontRange" class="slider" type="range" min="10" max="100" value="48" />
+        <span class="slider-value" id="fontValue">48px</span>
+    </div>
+    <div class="row">
+        <label>Unit Size</label>
+        <input id="unitFontRange" class="slider" type="range" min="8" max="50" value="18" />
+        <span class="slider-value" id="unitFontValue">18px</span>
+    </div>
+    <div class="row">
+        <label>Unit X Offset</label>
+        <input id="unitXRange" class="slider" type="range" min="0" max="100" value="70" />
+    </div>
+    <div class="row">
+        <label>Unit Y Offset</label>
+        <input id="unitYRange" class="slider" type="range" min="0" max="100" value="50" />
+    </div>
 
     <div class="section-title">Realism</div>
-    <div class="row"><label>Rotation</label><input id="rotationInput" type="number" min="-180" max="180" value="0" /></div>
-    <div class="row"><label>Tilt X</label><input id="tiltXRange" class="slider" type="range" min="-60" max="60" value="0" /><span class="slider-value" id="tiltXValue">0°</span></div>
-    <div class="row"><label>Tilt Y</label><input id="tiltYRange" class="slider" type="range" min="-60" max="60" value="0" /><span class="slider-value" id="tiltYValue">0°</span></div>
+    <div class="row">
+        <label>Rotation</label>
+        <input id="rotationInput" type="number" min="-180" max="180" value="0" />
+    </div>
+    <div class="row">
+        <label>Tilt X</label>
+        <input id="tiltXRange" class="slider" type="range" min="-60" max="60" value="0" />
+        <span class="slider-value" id="tiltXValue">0°</span>
+    </div>
+    <div class="row">
+        <label>Tilt Y</label>
+        <input id="tiltYRange" class="slider" type="range" min="-60" max="60" value="0" />
+        <span class="slider-value" id="tiltYValue">0°</span>
+    </div>
     
-    <div class="row"><label>Flicker</label><button id="flickerBtn" class="ghost" style="width:auto; color: #ffeb3b; border-color: #ffeb3b;">Flicker: ON</button></div>
+    <div class="row">
+        <label>Flicker</label>
+        <button id="flickerBtn" class="ghost" style="width:auto; color: #ffeb3b; border-color: #ffeb3b;">Flicker: ON</button>
+    </div>
     
-    <div class="row"><label>Noise</label><button id="noiseBtn" class="ghost" style="width:auto;">Noise: ON</button></div>
-    <div class="row"><label>Ghost (8888)</label><button id="ghostBtn" class="ghost" style="width:auto;">Ghost: ON</button></div>
-    <div class="row"><label>Blur</label><input id="edgeBlurRange" class="slider" type="range" min="0" max="3" step="0.1" value="0.6" /><span class="slider-value" id="edgeBlurValue">0.6px</span></div>
+    <div class="row">
+        <label>Noise</label>
+        <button id="noiseBtn" class="ghost" style="width:auto;">Noise: ON</button>
+    </div>
+    <div class="row">
+        <label>Ghost (8888)</label>
+        <button id="ghostBtn" class="ghost" style="width:auto;">Ghost: ON</button>
+    </div>
+    <div class="row">
+        <label>Blur</label>
+        <input id="edgeBlurRange" class="slider" type="range" min="0" max="3" step="0.1" value="0.6" />
+        <span class="slider-value" id="edgeBlurValue">0.6px</span>
+    </div>
     
     <div class="section-title">Appearance</div>
-    <div class="row"><label>Boldness</label><input id="fontWeightRange" class="slider" type="range" min="100" max="900" step="100" value="700" /><span class="slider-value" id="fontWeightValue">700</span></div>
-    <div class="row"><label>Opacity</label><input id="opacityRange" class="slider" type="range" min="0.1" max="1" step="0.05" value="0.85" /><span class="slider-value" id="opacityValue">85%</span></div>
-    <div class="row"><label>Color</label><input id="colorInput" type="color" value="#000000" /></div>
+    <div class="row">
+        <label>Boldness</label>
+        <input id="fontWeightRange" class="slider" type="range" min="100" max="900" step="100" value="700" />
+        <span class="slider-value" id="fontWeightValue">700</span>
+    </div>
+    <div class="row">
+        <label>Opacity</label>
+        <input id="opacityRange" class="slider" type="range" min="0.1" max="1" step="0.05" value="0.85" />
+        <span class="slider-value" id="opacityValue">85%</span>
+    </div>
+    <div class="row">
+        <label>Color</label>
+        <input id="colorInput" type="color" value="#000000" />
+    </div>
 
     <div class="section-title">Image</div>
-    <div class="row"><label>Image Zoom</label><input id="zoomRange" class="slider" type="range" min="0.5" max="2" step="0.1" value="1" /></div>
-    <div class="row"><input type="url" id="imageInput" placeholder="New Image URL" /><button id="addImageBtn">Add</button></div>
+    <div class="row">
+        <label>Image Zoom</label>
+        <input id="zoomRange" class="slider" type="range" min="0.5" max="2" step="0.1" value="1" />
+    </div>
+    <div class="row">
+        <input type="url" id="imageInput" placeholder="New Image URL" />
+        <button id="addImageBtn">Add</button>
+    </div>
   </div>
 
   <script type="module">
@@ -650,8 +839,8 @@
       function autoAdjustSystem() {
           if (state.cuMode) {
               state.unitFont = Math.max(12, state.font * 0.35); 
-              state.unitX = state.x + state.w - (state.w * 0.30); 
-              state.unitY = state.y + (state.h * 0.18);
+              state.unitX = state.x + state.w + 2; 
+              state.unitY = state.y + (state.h * 0.2);
           }
       }
 
@@ -668,28 +857,34 @@
         ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
         ghostDisplay.style.display = state.ghost ? 'block' : 'none';
 
-        // --- NEW LOGIC: MD/kW vs C u/kWh inside Capital Mode ---
+        // --- FIXED: INDEPENDENT DRAGGING ---
+        reading.style.paddingRight = '10px'; 
+        
         if(state.cuMode) {
-            reading.style.paddingRight = '32%'; 
-            
             if (valText.includes('.')) {
-                // Point Number Logic -> Show MD / kW
-                unitElem.innerHTML = `<div style="position:relative; pointer-events:none; text-align:right; display:flex; flex-direction:column; align-items:flex-end;">
-                    <div style="font-family:'DS-Digital', monospace; font-size:1.3em; line-height:0.8; margin-bottom:1px; letter-spacing:1px;">MD</div>
-                    <div style="font-family:monospace; line-height:1; margin-top:2px; letter-spacing:1px; font-size:1.05em;">kW</div>
+                unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 0.9;">
+                    <div style="font-family:'DS-Digital', monospace; font-size:1.4em;">MD</div>
+                    <div style="font-family:monospace; font-size:1.1em; margin-top:2px;">kW</div>
                 </div>`;
             } else {
-                // Normal Number Logic -> Show C u / kW h
-                unitElem.innerHTML = `<div style="position:relative; pointer-events:none; text-align:left; display:flex; flex-direction:column; align-items:flex-start;">
-                    <div style="white-space:nowrap; display:flex; align-items:flex-end; margin-bottom:1px;">
-                        <span style="font-family:'DS-Digital', monospace; font-size:1.6em; line-height:0.8;">C</span>
-                        <span style="font-family:'DS-Digital', monospace; font-size:1.25em; line-height:0.8; margin-left:3px; display:inline-block; clip-path:inset(35% 0 0 0);">u</span>
+                unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 0.9;">
+                    <div style="display:flex; align-items:flex-end; margin-bottom: 2px;">
+                        <span style="font-family:'DS-Digital', monospace; font-size:1.7em;">C</span>
+                        <span style="font-family:'DS-Digital', monospace; font-size:1.3em; margin-left:2px; clip-path:inset(35% 0 0 0);">u</span>
                     </div>
-                    <div style="font-family:monospace; line-height:1; margin-top:2px; padding-left:0.8em; letter-spacing:1px; font-size:0.95em;">kW h</div>
+                    <div style="font-family:monospace; font-size:1.0em;">kW h</div>
                 </div>`;
             }
+            // Removed fixed width/height so it's independent
+            unitElem.style.width = 'auto';
+            unitElem.style.height = 'auto';
+            unitElem.style.padding = '4px 8px';
+            unitElem.style.pointerEvents = 'auto'; 
         } else {
-            reading.style.paddingRight = '10px'; 
+            unitElem.style.width = 'auto';
+            unitElem.style.height = 'auto';
+            unitElem.style.padding = '4px 8px';
+            unitElem.style.pointerEvents = 'auto';
             unitElem.textContent = unitText;
         }
 
@@ -854,14 +1049,31 @@
       }
       
       // DRAG & RESIZE
-      function throttle(fn, delay) { let last = 0; return (...args) => { const now = Date.now(); if(now - last >= delay) { fn(...args); last = now; } } }
+      function throttle(fn, delay) { 
+        let last = 0; 
+        return (...args) => { 
+          const now = Date.now(); 
+          if(now - last >= delay) { 
+            fn(...args); 
+            last = now; 
+          } 
+        } 
+      }
+
       let isDrag = false, startX, startY, startLeft, startTop;
+
       function startDrag(e, el, isGroup) {
-        if(e.target === resizer) return; e.preventDefault(); isDrag = true;
+        if(e.target === resizer) return; 
+        e.preventDefault(); 
+        isDrag = true;
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
         const rect = wrap.getBoundingClientRect();
-        startX = cx; startY = cy; startLeft = isGroup ? state.x : state.unitX; startTop = isGroup ? state.y : state.unitY;
+        startX = cx; 
+        startY = cy; 
+        startLeft = isGroup ? state.x : state.unitX; 
+        startTop = isGroup ? state.y : state.unitY;
+
         const moveHandler = throttle((ev) => {
             if(!isDrag) return;
             const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
@@ -870,19 +1082,35 @@
             state[isGroup ? 'y' : 'unitY'] = startTop + ((mcy - startY) / rect.height * 100);
             applyState();
         }, 16);
-        const stopHandler = () => { isDrag = false; window.removeEventListener('mousemove', moveHandler); window.removeEventListener('mouseup', stopHandler); window.removeEventListener('touchmove', moveHandler); window.removeEventListener('touchend', stopHandler); };
-        window.addEventListener('mousemove', moveHandler); window.addEventListener('mouseup', stopHandler); window.addEventListener('touchmove', moveHandler); window.addEventListener('touchend', stopHandler);
+
+        const stopHandler = () => { 
+          isDrag = false; 
+          window.removeEventListener('mousemove', moveHandler); 
+          window.removeEventListener('mouseup', stopHandler); 
+          window.removeEventListener('touchmove', moveHandler); 
+          window.removeEventListener('touchend', stopHandler); 
+        };
+
+        window.addEventListener('mousemove', moveHandler); 
+        window.addEventListener('mouseup', stopHandler); 
+        window.addEventListener('touchmove', moveHandler); 
+        window.addEventListener('touchend', stopHandler);
       }
+
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, true));
       readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, true));
       
       unitElem.addEventListener('mousedown', (e) => startDrag(e, unitElem, false));
       unitElem.addEventListener('touchstart', (e) => startDrag(e, unitElem, false));
       
-      resizer.addEventListener('mousedown', initResize); resizer.addEventListener('touchstart', initResize);
+      resizer.addEventListener('mousedown', initResize); 
+      resizer.addEventListener('touchstart', initResize);
+
       function initResize(e) {
-          e.stopPropagation(); e.preventDefault();
+          e.stopPropagation(); 
+          e.preventDefault();
           const sW = state.w, sH = state.h, sx = e.touches ? e.touches[0].clientX : e.clientX, sy = e.touches ? e.touches[0].clientY : e.clientY, rect = wrap.getBoundingClientRect();
+          
           const doResize = throttle((ev) => {
               const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX, mcy = ev.touches ? ev.touches[0].clientY : ev.clientY;
               state.w = Math.max(5, sW + ((mcx - sx) / rect.width * 100));
@@ -891,8 +1119,18 @@
               if(state.cuMode) autoAdjustSystem(); 
               applyState();
           }, 16);
-          const stopResize = () => { window.removeEventListener('mousemove', doResize); window.removeEventListener('mouseup', stopResize); window.removeEventListener('touchmove', doResize); window.removeEventListener('touchend', stopResize); };
-          window.addEventListener('mousemove', doResize); window.addEventListener('mouseup', stopResize); window.addEventListener('touchmove', doResize); window.addEventListener('touchend', stopResize);
+
+          const stopResize = () => { 
+            window.removeEventListener('mousemove', doResize); 
+            window.removeEventListener('mouseup', stopResize); 
+            window.removeEventListener('touchmove', doResize); 
+            window.removeEventListener('touchend', stopResize); 
+          };
+
+          window.addEventListener('mousemove', doResize); 
+          window.addEventListener('mouseup', stopResize); 
+          window.addEventListener('touchmove', doResize); 
+          window.addEventListener('touchend', stopResize);
       }
 
       textInput.addEventListener('input', () => { state.text = textInput.value; applyState(); });
@@ -938,79 +1176,114 @@
         const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d'), img = new Image();
         img.crossOrigin = 'anonymous'; img.src = meterImg.src;
         img.onload = () => {
-            const z = state.zoom; canvas.width = img.width * z; canvas.height = img.height * z; ctx.scale(z, z); ctx.drawImage(img, 0, 0);
+            const z = state.zoom; 
+            canvas.width = img.width * z; 
+            canvas.height = img.height * z; 
+            ctx.scale(z, z); 
+            ctx.drawImage(img, 0, 0);
+
             if(state.scannerMode) {
-                ctx.save(); ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; ctx.fillRect(0,0,img.width, img.height);
+                ctx.save(); 
+                ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; 
+                ctx.fillRect(0,0,img.width, img.height);
                 const rx = (state.x / 100) * img.width, ry = (state.y / 100) * img.height, rw = (state.w / 100) * img.width, rh = (state.h / 100) * img.height;
-                ctx.translate(rx, ry); ctx.rotate(state.rotation * Math.PI / 180);
-                ctx.globalCompositeOperation = 'destination-out'; ctx.fillRect(0, 0, rw, rh);
-                ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeRect(0, 0, rw, rh);
+                ctx.translate(rx, ry); 
+                ctx.rotate(state.rotation * Math.PI / 180);
+                ctx.globalCompositeOperation = 'destination-out'; 
+                ctx.fillRect(0, 0, rw, rh);
+                ctx.globalCompositeOperation = 'source-over'; 
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; 
+                ctx.setLineDash([5, 5]); 
+                ctx.lineWidth = 2; 
+                ctx.strokeRect(0, 0, rw, rh);
                 ctx.restore();
             }
-            const drawText = (text, xPct, yPct, size, isGhost) => {
-                ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
-                const rad = state.rotation * Math.PI / 180; ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
-                ctx.font = `${state.fontWeight} ${size}px 'DS-Digital', monospace`; ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; 
-                ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = isGhost ? 0.08 : state.opacity; ctx.fillStyle = state.color;
-                if (state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
-                
-                let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
-                let rightPaddingOffset = state.cuMode ? (state.w/100*img.width) * 0.32 : 10;
-                
-                for (let char of text) { 
-                    ctx.fillText(char, xc + (state.w/100*img.width) - rightPaddingOffset, (state.h/100*img.height)/2); 
-                    xc += ctx.measureText(char).width; 
-                }
-                ctx.restore();
-            };
-            
-            const parts = state.text.split(' '), val = parts[0], unit = parts.slice(1).join(' ');
-            if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
-            drawText(val, state.x, state.y, state.font, false);
-            
+
+            // Draw Main Reading
             ctx.save();
-            const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; ctx.translate(ux, uy);
-            ctx.rotate(state.rotation * Math.PI / 180); 
-            ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
-            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
+            const tx = (state.x / 100) * img.width, ty = (state.y / 100) * img.height;
+            ctx.translate(tx + (state.w/100*img.width), ty + (state.h/100*img.height)/2);
+            ctx.rotate(state.rotation * Math.PI / 180);
+            ctx.font = `${state.fontWeight} ${state.font}px 'DS-Digital'`;
+            ctx.textAlign = 'right'; 
+            ctx.textBaseline = 'middle'; 
+            ctx.fillStyle = state.color; 
+            ctx.globalCompositeOperation = 'multiply'; 
+            ctx.globalAlpha = state.opacity;
+            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`;
             
+            const val = state.text.split(' ')[0];
+            let tw = 0; 
+            for(let c of val) tw += ctx.measureText(c).width; 
+            let xc = -tw;
+            for (let char of val) { 
+                ctx.fillText(char, xc - 10, 0); 
+                xc += ctx.measureText(char).width; 
+            }
+            ctx.restore();
+
+            // Draw Unit (Independent position matching HTML)
+            ctx.save();
+            const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height;
+            ctx.translate(ux + 8, uy + 4); 
+            ctx.rotate(state.rotation * Math.PI / 180);
+            ctx.fillStyle = state.color; 
+            ctx.globalCompositeOperation = 'multiply'; 
+            ctx.globalAlpha = state.opacity;
+            if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`;
+            
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
             if (state.cuMode) {
                 if (val.includes('.')) {
-                    // Export MD and kW
-                    ctx.textAlign = 'right';
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
-                    ctx.fillText("MD", state.unitFont * 2.5, -state.unitFont * 0.2);
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.4}px 'DS-Digital', monospace`;
+                    let mdW = ctx.measureText("MD").width;
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
+                    let kwW = ctx.measureText("kW").width;
+                    let maxW = Math.max(mdW, kwW);
+
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.4}px 'DS-Digital', monospace`;
+                    ctx.fillText("MD", maxW - mdW, 0);
                     
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
-                    ctx.fillText("kW", state.unitFont * 2.5, state.unitFont * 0.9);
+                    ctx.fillText("kW", maxW - kwW, state.unitFont * 1.2);
                 } else {
-                    // Export C u and kW h
-                    ctx.textAlign = 'left';
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.6}px 'DS-Digital', monospace`;
-                    ctx.fillText("C", 0, -state.unitFont * 0.4);
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.7}px 'DS-Digital', monospace`;
+                    let cW = ctx.measureText("C").width;
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
+                    let uW = ctx.measureText("u").width;
+                    let topW = cW + 2 + uW;
                     
-                    let cWidth = ctx.measureText("C").width;
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.0}px monospace`;
+                    let btmW = ctx.measureText("kW h").width;
+                    let maxW = Math.max(topW, btmW);
+                    let topX = maxW - topW;
+                    
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.7}px 'DS-Digital', monospace`;
+                    ctx.fillText("C", topX, 0);
                     
                     ctx.save();
-                    let uSize = state.unitFont * 1.25;
                     ctx.beginPath();
-                    ctx.rect(cWidth, -state.unitFont * 0.4 - uSize*0.15, uSize + 10, uSize); 
+                    ctx.rect(topX + cW + 2, state.unitFont * 0.35, uW + 5, state.unitFont);
                     ctx.clip();
-                    ctx.font = `${state.fontWeight} ${uSize}px 'DS-Digital', monospace`;
-                    ctx.fillText("u", cWidth + 5, -state.unitFont * 0.4);
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
+                    ctx.fillText("u", topX + cW + 2, 0);
                     ctx.restore();
                     
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 0.95}px monospace`;
-                    let kShift = cWidth * 0.5; 
-                    ctx.fillText("kW h", kShift, state.unitFont * 0.7);
+                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.0}px monospace`;
+                    ctx.fillText("kW h", maxW - btmW, state.unitFont * 1.4);
                 }
             } else {
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
-                ctx.fillText(unit, 0, 0); 
+                ctx.fillText(state.text.split(' ').slice(1).join(' '), 0, 0);
             }
             ctx.restore();
             
-            const link = document.createElement('a'); link.download = 'meter.jpg'; link.href = canvas.toDataURL('image/jpeg', 0.9); link.click();
+            const link = document.createElement('a'); 
+            link.download = 'meter.jpg'; 
+            link.href = canvas.toDataURL('image/jpeg', 0.9); 
+            link.click();
         };
         img.onerror = () => alert('CORS Error: Image cannot be saved.');
       });
