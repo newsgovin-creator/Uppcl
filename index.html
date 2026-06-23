@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -218,7 +219,6 @@
       cursor: grab;
       user-select: none;
       color: #000000;
-      font-weight: var(--font-weight);
       line-height: 1;
       transform: rotate(var(--rotation)) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(1px);
       opacity: var(--opacity);
@@ -226,20 +226,25 @@
 
     .unit {
       font-family: monospace;
+      font-weight: var(--font-weight);
       padding: 4px 8px;
       font-size: clamp(12px, 4vw, 16px);
     }
 
     .md-icon {
       font-family: Arial, sans-serif;
-      font-weight: bold;
-      letter-spacing: 1px;
+      font-weight: normal; /* Realistic Thin LCD Look */
+      letter-spacing: 0px;
+      opacity: calc(var(--opacity) * 0.7); /* Slightly faded */
     }
 
     .oneb-icon {
-      font-family: monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border: 1px solid currentColor;
-      padding: 1px 3px;
+      padding: 2px 3px;
+      border-radius: 1px;
     }
 
     .free-bulb {
@@ -524,7 +529,7 @@
       </div>
 
       <div id="mdDisplay" class="md-icon merged camouflaged noise-active" style="display:none;">MD</div>
-      <div id="onebDisplay" class="oneb-icon merged camouflaged noise-active" style="display:none;">1 B</div>
+      <div id="onebDisplay" class="oneb-icon merged camouflaged noise-active" style="display:none;"></div>
 
       <div id="scannerBox" class="scanner-container" style="display:none;">
         <div class="resizer" id="scannerResizer"></div>
@@ -752,7 +757,7 @@
         if (devData) {
           if (devData.name !== selectedName) {
             loginError.style.display = 'block';
-            loginError.innerText = `❌ यह डिवाइस '${devData.name}' के नाम पर रजिस्टर है। आप इस फोन से लॉगिन नहीं कर सकते।`;
+            loginError.innerText = `❌ यह डिवाइस '${devData.name}' के नाम पर रजिस्टर है। आप gap से लॉगिन नहीं कर सकते।`;
             return;
           }
 
@@ -917,12 +922,12 @@
                   state.unitX = state.scanX + state.scanW - 12; 
                   state.unitY = state.scanY + (state.scanH * 0.40); 
                   
-                  // MD aligns Top-Right inside scanner box
-                  state.mdX = state.scanX + state.scanW - 6;
-                  state.mdY = state.scanY + 2; 
+                  // MD aligns Top-Right inside scanner box (adjusted closer to the edge)
+                  state.mdX = state.scanX + state.scanW - 8;
+                  state.mdY = state.scanY + 5; 
                   
                   // 1 B aligns Bottom-Right inside scanner box
-                  state.onebX = state.scanX + state.scanW - 8;
+                  state.onebX = state.scanX + state.scanW - 10;
                   state.onebY = state.scanY + state.scanH - 18; 
               } else {
                   // L&T NORMAL (340 kWh)
@@ -979,15 +984,17 @@
             if (valText.includes('.')) {
                 // DECIMAL LAYOUT: Show separate MD and 1 B
                 mdDisplay.style.display = 'block';
-                onebDisplay.style.display = 'block';
+                onebDisplay.style.display = 'flex'; // Changed to flex for inner alignment
                 
-                mdDisplay.style.fontSize = (state.unitFont * 0.7) + 'px';
+                mdDisplay.style.fontSize = (state.unitFont * 0.6) + 'px';
                 mdDisplay.style.left = state.mdX + '%';
                 mdDisplay.style.top = state.mdY + '%';
                 
-                onebDisplay.style.fontSize = (state.unitFont * 0.6) + 'px';
                 onebDisplay.style.left = state.onebX + '%';
                 onebDisplay.style.top = state.onebY + '%';
+                
+                // NEW REALISTIC 1B DESIGN (Big '1' in DS-Digital, Small 'B' in Sans-serif)
+                onebDisplay.innerHTML = `<span style="font-family:'DS-Digital', monospace; font-size:${state.unitFont * 0.8}px; margin-right: 2px;">1</span><span style="font-family: sans-serif; font-size:${state.unitFont * 0.4}px; font-weight: bold;">B</span>`;
                 
                 unitElem.innerHTML = `kW`;
             } else {
@@ -1335,6 +1342,7 @@
           window.addEventListener('mousemove', doResize); 
           window.addEventListener('mouseup', stopResize); 
           window.addEventListener('touchmove', doResize); 
+          window.addEventListener('touchmove', doResize); 
           window.addEventListener('touchend', stopResize);
       }
 
@@ -1438,31 +1446,56 @@
             if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
             drawText(val, state.x, state.y, state.font, false);
             
-            // L&T DECIMAL MD Export
+            // L&T DECIMAL MD Export (Thin & Faded look)
             if(state.lntMode && val.includes('.')) {
                 ctx.save();
                 const mdx = (state.mdX / 100) * img.width, mdy = (state.mdY / 100) * img.height; 
                 ctx.translate(mdx, mdy);
                 ctx.rotate(state.rotation * Math.PI / 180); 
-                ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
+                ctx.globalCompositeOperation = 'multiply'; 
+                ctx.globalAlpha = state.opacity * 0.7; // Faded for LCD effect
+                ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
-                ctx.font = `bold ${state.unitFont * 0.7}px Arial, sans-serif`;
+                
+                ctx.font = `normal ${state.unitFont * 0.6}px Arial, sans-serif`; // Not bold
                 ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                 ctx.fillText("MD", 0, 0);
                 ctx.restore();
 
-                // L&T DECIMAL 1 B Export
+                // L&T DECIMAL 1 B Export (Big '1', Small 'B' in a box)
                 ctx.save();
                 const obx = (state.onebX / 100) * img.width, oby = (state.onebY / 100) * img.height; 
                 ctx.translate(obx, oby);
                 ctx.rotate(state.rotation * Math.PI / 180); 
-                ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
+                ctx.globalCompositeOperation = 'multiply'; 
+                ctx.globalAlpha = state.opacity; 
+                ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
-                ctx.font = `${state.fontWeight} ${state.unitFont * 0.6}px monospace`;
+                
                 ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-                let boxW = ctx.measureText("1 B").width;
-                ctx.strokeRect(-2, 0, boxW + 4, state.unitFont * 0.8);
-                ctx.fillText("1 B", 0, state.unitFont * 0.1);
+                
+                let digitFont = `${state.fontWeight} ${state.unitFont * 0.8}px 'DS-Digital', monospace`;
+                let bFont = `bold ${state.unitFont * 0.4}px sans-serif`;
+                
+                ctx.font = digitFont;
+                let w1 = ctx.measureText("1").width;
+                
+                ctx.font = bFont;
+                let wB = ctx.measureText("B").width;
+                
+                let totalW = w1 + wB + 6;
+                let boxH = state.unitFont * 0.9;
+                
+                ctx.strokeStyle = state.color;
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0, 0, totalW, boxH);
+                
+                ctx.font = digitFont;
+                ctx.fillText("1", 2, 0);
+                
+                ctx.font = bFont;
+                ctx.fillText("B", w1 + 4, boxH * 0.4);
+                
                 ctx.restore();
             }
 
