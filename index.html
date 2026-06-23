@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -105,7 +104,7 @@
       z-index: 7;
     }
 
-    /* SEPARATED CONTAINERS: Reading vs Scanner */
+    /* CONTAINERS */
     .reading-container {
       position: absolute;
       z-index: 100; 
@@ -212,7 +211,8 @@
       pointer-events: none;
     }
     
-    .unit, .free-bulb {
+    /* INDEPENDENT UNITS & ICONS */
+    .unit, .free-bulb, .md-icon, .oneb-icon {
       position: absolute;
       z-index: 100;
       cursor: grab;
@@ -228,6 +228,18 @@
       font-family: monospace;
       padding: 4px 8px;
       font-size: clamp(12px, 4vw, 16px);
+    }
+
+    .md-icon {
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .oneb-icon {
+      font-family: monospace;
+      border: 1px solid currentColor;
+      padding: 1px 3px;
     }
 
     .free-bulb {
@@ -510,6 +522,9 @@
           <path d="M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z"/>
         </svg>
       </div>
+
+      <div id="mdDisplay" class="md-icon merged camouflaged noise-active" style="display:none;">MD</div>
+      <div id="onebDisplay" class="oneb-icon merged camouflaged noise-active" style="display:none;">1 B</div>
 
       <div id="scannerBox" class="scanner-container" style="display:none;">
         <div class="resizer" id="scannerResizer"></div>
@@ -810,6 +825,8 @@
       const display = document.getElementById('display');
       const ghostDisplay = document.getElementById('ghostDisplay');
       const unitElem = document.getElementById('unit');
+      const mdDisplay = document.getElementById('mdDisplay');
+      const onebDisplay = document.getElementById('onebDisplay');
       const resizer = document.getElementById('resizer');
       const meterImg = document.getElementById('meterImg');
       const textInput = document.getElementById('textInput');
@@ -847,6 +864,8 @@
         font: 36, unitFont: 16, fontWeight: 700,
         unitX: 70, unitY: 50, color: '#000000', text: '000339 kWh',
         bulbX: 72, bulbY: 46, 
+        mdX: 90, mdY: 46,
+        onebX: 90, onebY: 52,
         rotation: 0, tiltX: 0, tiltY: 0, opacity: 0.85, edgeBlur: 0.6,
         glassOpacity: 0.3, dirtOpacity: 0.2, moireOpacity: 0.10,
         noise: true, ghost: true, flicker: true, zoom: 1,
@@ -863,6 +882,10 @@
       if(state.scanY === undefined) state.scanY = state.y;
       if(state.scanW === undefined) state.scanW = state.w;
       if(state.scanH === undefined) state.scanH = state.h;
+      if(state.mdX === undefined) state.mdX = defaults.mdX;
+      if(state.mdY === undefined) state.mdY = defaults.mdY;
+      if(state.onebX === undefined) state.onebX = defaults.onebX;
+      if(state.onebY === undefined) state.onebY = defaults.onebY;
 
       let memoryState = { unitFont: defaults.unitFont, unitX: defaults.unitX, unitY: defaults.unitY };
 
@@ -885,17 +908,30 @@
               state.unitX = state.scanX + state.scanW - 18; 
               state.unitY = state.scanY + (state.scanH * 0.1);
           } else if (state.lntMode) {
-              // L&T DECIMAL vs NORMAL AUTO-ADJUST
+              // --- SCANNER BOUNDARY MATH FOR L&T ---
               if (state.text.includes('.')) {
+                  // L&T DECIMAL (0.03 kW)
                   state.unitFont = Math.max(12, state.font * 0.35); 
-                  state.unitX = state.scanX + state.scanW - 15; 
-                  state.unitY = state.scanY + (state.scanH * 0.25);
+                  
+                  // kW aligns middle-right inside scanner box
+                  state.unitX = state.scanX + state.scanW - 12; 
+                  state.unitY = state.scanY + (state.scanH * 0.40); 
+                  
+                  // MD aligns Top-Right inside scanner box
+                  state.mdX = state.scanX + state.scanW - 6;
+                  state.mdY = state.scanY + 2; 
+                  
+                  // 1 B aligns Bottom-Right inside scanner box
+                  state.onebX = state.scanX + state.scanW - 8;
+                  state.onebY = state.scanY + state.scanH - 18; 
               } else {
+                  // L&T NORMAL (340 kWh)
                   state.unitFont = Math.max(12, state.font * 0.38); 
                   state.unitX = state.scanX + state.scanW - 18; 
                   state.unitY = state.scanY + (state.scanH * 0.22);
               }
               
+              // Bulb Auto Adjust to Top-Left inside scanner box
               state.bulbX = state.scanX + (state.scanW * 0.08); 
               state.bulbY = state.scanY + (state.scanH * 0.20); 
           }
@@ -934,28 +970,38 @@
 
         if(state.lntMode) {
             lntBulb.style.display = 'block';
-            lntBulb.style.color = state.color;
-            lntBulb.style.setProperty('--opacity', state.opacity);
-            
             lntBulb.style.left = state.bulbX + '%';
             lntBulb.style.top = state.bulbY + '%';
             
             reading.style.paddingLeft = '0px'; 
             reading.style.paddingRight = '25%'; 
             
-            // NEW L&T DECIMAL LOGIC
             if (valText.includes('.')) {
-                unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 1;">
-                    <div style="font-family: Arial, sans-serif; font-size:0.7em; font-weight:bold; letter-spacing: 1px;">MD</div>
-                    <div style="font-family: monospace; font-size:1.2em;">kW</div>
-                    <div style="font-family: monospace; font-size:0.6em; border: 1px solid currentColor; padding: 1px 3px; margin-top: 2px;">1 B</div>
-                </div>`;
+                // DECIMAL LAYOUT: Show separate MD and 1 B
+                mdDisplay.style.display = 'block';
+                onebDisplay.style.display = 'block';
+                
+                mdDisplay.style.fontSize = (state.unitFont * 0.7) + 'px';
+                mdDisplay.style.left = state.mdX + '%';
+                mdDisplay.style.top = state.mdY + '%';
+                
+                onebDisplay.style.fontSize = (state.unitFont * 0.6) + 'px';
+                onebDisplay.style.left = state.onebX + '%';
+                onebDisplay.style.top = state.onebY + '%';
+                
+                unitElem.innerHTML = `kW`;
             } else {
-                unitElem.innerHTML = `<div style="font-family: monospace; font-size: 1.1em; line-height: 0.9;">kW h</div>`;
+                // NORMAL LAYOUT: Hide MD and 1 B
+                mdDisplay.style.display = 'none';
+                onebDisplay.style.display = 'none';
+                unitElem.innerHTML = `kW h`;
             }
             
         } else if(state.cuMode) {
             lntBulb.style.display = 'none';
+            mdDisplay.style.display = 'none';
+            onebDisplay.style.display = 'none';
+            
             reading.style.paddingLeft = '0px';
             reading.style.paddingRight = '25%'; 
             
@@ -975,12 +1021,14 @@
             }
         } else {
             lntBulb.style.display = 'none';
+            mdDisplay.style.display = 'none';
+            onebDisplay.style.display = 'none';
             reading.style.paddingLeft = '0px';
             reading.style.paddingRight = '10px'; 
             unitElem.textContent = unitText;
         }
 
-        [reading, unitElem, lntBulb].forEach(el => {
+        [reading, unitElem, lntBulb, mdDisplay, onebDisplay].forEach(el => {
             if(el) {
                 el.style.color = state.color;
                 el.style.setProperty('--font-weight', state.fontWeight);
@@ -1004,14 +1052,16 @@
         unitElem.style.top = state.unitY + '%';
         
         const filterString = `blur(${state.edgeBlur}px)`;
-        if(state.noise) { reading.classList.add('noise-active'); unitElem.classList.add('noise-active'); lntBulb.classList.add('noise-active'); }
-        else { reading.classList.remove('noise-active'); unitElem.classList.remove('noise-active'); lntBulb.classList.remove('noise-active'); }
-        if(state.flicker) { reading.classList.add('flicker-active'); unitElem.classList.add('flicker-active'); lntBulb.classList.add('flicker-active'); }
-        else { reading.classList.remove('flicker-active'); unitElem.classList.remove('flicker-active'); lntBulb.classList.remove('flicker-active'); }
+        if(state.noise) { reading.classList.add('noise-active'); unitElem.classList.add('noise-active'); lntBulb.classList.add('noise-active'); mdDisplay.classList.add('noise-active'); onebDisplay.classList.add('noise-active'); }
+        else { reading.classList.remove('noise-active'); unitElem.classList.remove('noise-active'); lntBulb.classList.remove('noise-active'); mdDisplay.classList.remove('noise-active'); onebDisplay.classList.remove('noise-active');}
+        if(state.flicker) { reading.classList.add('flicker-active'); unitElem.classList.add('flicker-active'); lntBulb.classList.add('flicker-active'); mdDisplay.classList.add('flicker-active'); onebDisplay.classList.add('flicker-active');}
+        else { reading.classList.remove('flicker-active'); unitElem.classList.remove('flicker-active'); lntBulb.classList.remove('flicker-active'); mdDisplay.classList.remove('flicker-active'); onebDisplay.classList.remove('flicker-active');}
         
         reading.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
         unitElem.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
         lntBulb.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
+        mdDisplay.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
+        onebDisplay.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
         
         textInput.value = state.text;
         fontRange.value = state.font;
@@ -1143,6 +1193,7 @@
           });
       }
       
+      // DRAG & RESIZE SYSTEM
       let isDrag = false, startX, startY, startLeft, startTop;
       
       function startDrag(e, el, targetType) {
@@ -1164,6 +1215,10 @@
             startLeft = state.bulbX; startTop = state.bulbY;
         } else if (targetType === 'scanner') {
             startLeft = state.scanX; startTop = state.scanY;
+        } else if (targetType === 'md') {
+            startLeft = state.mdX; startTop = state.mdY;
+        } else if (targetType === 'oneb') {
+            startLeft = state.onebX; startTop = state.onebY;
         }
 
         const moveHandler = (ev) => {
@@ -1184,6 +1239,10 @@
                 state.bulbX = nx; state.bulbY = ny;
             } else if (targetType === 'scanner') {
                 state.scanX = nx; state.scanY = ny;
+            } else if (targetType === 'md') {
+                state.mdX = nx; state.mdY = ny;
+            } else if (targetType === 'oneb') {
+                state.onebX = nx; state.onebY = ny;
             }
         };
 
@@ -1202,6 +1261,7 @@
         window.addEventListener('touchend', stopHandler);
       }
       
+      // Attach Drag Events
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, 'group'));
       readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, 'group'));
       
@@ -1213,7 +1273,14 @@
 
       lntBulb.addEventListener('mousedown', (e) => startDrag(e, lntBulb, 'bulb'));
       lntBulb.addEventListener('touchstart', (e) => startDrag(e, lntBulb, 'bulb'));
+
+      mdDisplay.addEventListener('mousedown', (e) => startDrag(e, mdDisplay, 'md'));
+      mdDisplay.addEventListener('touchstart', (e) => startDrag(e, mdDisplay, 'md'));
+
+      onebDisplay.addEventListener('mousedown', (e) => startDrag(e, onebDisplay, 'oneb'));
+      onebDisplay.addEventListener('touchstart', (e) => startDrag(e, onebDisplay, 'oneb'));
       
+      // Attach Resize Events
       resizer.addEventListener('mousedown', (e) => initResize(e, 'group')); 
       resizer.addEventListener('touchstart', (e) => initResize(e, 'group'));
       
@@ -1316,6 +1383,7 @@
         img.onload = () => {
             const z = state.zoom; canvas.width = img.width * z; canvas.height = img.height * z; ctx.scale(z, z); ctx.drawImage(img, 0, 0);
             
+            // Scanner Box Export
             if(state.scannerMode) {
                 ctx.save(); ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; ctx.fillRect(0,0,img.width, img.height);
                 const rx = (state.scanX / 100) * img.width, ry = (state.scanY / 100) * img.height, rw = (state.scanW / 100) * img.width, rh = (state.scanH / 100) * img.height;
@@ -1325,11 +1393,11 @@
                 ctx.restore();
             }
 
+            // Bulb Export
             if (state.lntMode) {
                 ctx.save();
                 const bx = (state.bulbX / 100) * img.width;
                 const by = (state.bulbY / 100) * img.height;
-                
                 ctx.translate(bx, by); 
                 const rad = state.rotation * Math.PI / 180;
                 ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
@@ -1348,6 +1416,7 @@
                 ctx.restore();
             }
             
+            // Text Export Helper
             const drawText = (text, xPct, yPct, size, isGhost) => {
                 ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
                 const rad = state.rotation * Math.PI / 180; ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
@@ -1356,7 +1425,6 @@
                 if (state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
                 let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
-                
                 let rightPaddingOffset = (state.lntMode || state.cuMode) ? (state.w/100*img.width) * 0.25 : 10;
                 
                 for (let char of text) { 
@@ -1370,6 +1438,35 @@
             if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
             drawText(val, state.x, state.y, state.font, false);
             
+            // L&T DECIMAL MD Export
+            if(state.lntMode && val.includes('.')) {
+                ctx.save();
+                const mdx = (state.mdX / 100) * img.width, mdy = (state.mdY / 100) * img.height; 
+                ctx.translate(mdx, mdy);
+                ctx.rotate(state.rotation * Math.PI / 180); 
+                ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
+                if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
+                ctx.font = `bold ${state.unitFont * 0.7}px Arial, sans-serif`;
+                ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+                ctx.fillText("MD", 0, 0);
+                ctx.restore();
+
+                // L&T DECIMAL 1 B Export
+                ctx.save();
+                const obx = (state.onebX / 100) * img.width, oby = (state.onebY / 100) * img.height; 
+                ctx.translate(obx, oby);
+                ctx.rotate(state.rotation * Math.PI / 180); 
+                ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
+                if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
+                ctx.font = `${state.fontWeight} ${state.unitFont * 0.6}px monospace`;
+                ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+                let boxW = ctx.measureText("1 B").width;
+                ctx.strokeRect(-2, 0, boxW + 4, state.unitFont * 0.8);
+                ctx.fillText("1 B", 0, state.unitFont * 0.1);
+                ctx.restore();
+            }
+
+            // Unit Export (kW or kWh)
             ctx.save();
             const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; 
             ctx.translate(ux, uy);
@@ -1377,69 +1474,44 @@
             ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
             if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
             
-            // NEW L&T DECIMAL CANVAS LOGIC
-            if (state.lntMode) {
+            if (state.cuMode) {
                 if (val.includes('.')) {
-                    ctx.textAlign = 'right';
-                    ctx.textBaseline = 'top';
-                    
-                    ctx.font = `bold ${state.unitFont * 0.7}px Arial, sans-serif`;
-                    ctx.fillText("MD", 0, -state.unitFont * 0.8);
-                    
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 1.2}px monospace`;
-                    ctx.fillText("kW", 0, 0);
-                    
-                    ctx.font = `${state.fontWeight} ${state.unitFont * 0.6}px monospace`;
-                    let boxW = ctx.measureText("1 B").width;
-                    ctx.strokeRect(-boxW - 4, state.unitFont * 1.3, boxW + 8, state.unitFont * 0.8);
-                    ctx.fillText("1 B", -2, state.unitFont * 1.4);
-                } else {
-                    ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
-                    ctx.fillText("kW h", 0, 0);
-                }
-            } else if (state.cuMode) {
-                if (val.includes('.')) {
-                    ctx.textAlign = 'left';
-                    ctx.textBaseline = 'top';
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.4}px 'DS-Digital', monospace`;
                     let mdW = ctx.measureText("MD").width;
-                    
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
                     let kwW = ctx.measureText("kW").width;
                     let maxW = Math.max(mdW, kwW);
-
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.4}px 'DS-Digital', monospace`;
                     ctx.fillText("MD", maxW - mdW, 0);
-                    
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
                     ctx.fillText("kW", maxW - kwW, state.unitFont * 1.2);
                 } else {
-                    ctx.textAlign = 'left';
-                    ctx.textBaseline = 'top';
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.7}px 'DS-Digital', monospace`;
                     let cW = ctx.measureText("C").width;
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
                     let uW = ctx.measureText("u").width;
                     let topW = cW + 2 + uW;
-                    
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.0}px monospace`;
                     let btmW = ctx.measureText("kW h").width;
                     let maxW = Math.max(topW, btmW);
                     let topX = maxW - topW;
-                    
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.7}px 'DS-Digital', monospace`;
                     ctx.fillText("C", topX, 0);
-                    
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.rect(topX + cW + 2, state.unitFont * 0.35, uW + 5, state.unitFont);
-                    ctx.clip();
+                    ctx.save(); ctx.beginPath(); ctx.rect(topX + cW + 2, state.unitFont * 0.35, uW + 5, state.unitFont); ctx.clip();
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.3}px 'DS-Digital', monospace`;
-                    ctx.fillText("u", topX + cW + 2, 0);
-                    ctx.restore();
-                    
+                    ctx.fillText("u", topX + cW + 2, 0); ctx.restore();
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.0}px monospace`;
                     ctx.fillText("kW h", maxW - btmW, state.unitFont * 1.4);
+                }
+            } else if (state.lntMode) {
+                ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+                ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
+                if(val.includes('.')) {
+                    ctx.fillText("kW", 0, 0);
+                } else {
+                    ctx.fillText("kW h", 0, 0);
                 }
             } else {
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
