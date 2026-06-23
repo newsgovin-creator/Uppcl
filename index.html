@@ -202,19 +202,28 @@
       pointer-events: none;
     }
     
-    .unit {
+    .unit, .free-bulb {
       position: absolute;
       z-index: 100;
       cursor: grab;
       user-select: none;
       color: #000000;
-      font-family: monospace;
       font-weight: var(--font-weight);
       line-height: 1;
       transform: rotate(var(--rotation)) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(1px);
       opacity: var(--opacity);
+    }
+
+    .unit {
+      font-family: monospace;
       padding: 4px 8px;
       font-size: clamp(12px, 4vw, 16px);
+    }
+
+    .free-bulb {
+      width: 25px;
+      height: 25px;
+      display: none;
     }
     
     .resizer {
@@ -486,14 +495,13 @@
       <div class="glass-overlay"></div>
       <div class="moire-overlay"></div>
 
-      <div id="readingGroup" class="reading-container" style="left: 70%; top: 45%; width: 33%; height: 9%;">
-        
-        <div id="lntBulb" class="merged camouflaged noise-active" style="display:none; position:absolute; z-index: 5;">
-          <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor">
-            <path d="M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z"/>
-          </svg>
-        </div>
+      <div id="lntBulb" class="free-bulb merged camouflaged noise-active">
+        <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor">
+          <path d="M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z"/>
+        </svg>
+      </div>
 
+      <div id="readingGroup" class="reading-container" style="left: 70%; top: 45%; width: 33%; height: 9%;">
         <div id="reading" class="reading merged camouflaged noise-active">
           <div class="ghost" id="ghostDisplay">888888</div>
           <div class="value" id="display">000339</div>
@@ -821,6 +829,7 @@
         x: 70, y: 45, w: 33, h: 9,
         font: 36, unitFont: 16, fontWeight: 700,
         unitX: 70, unitY: 50, color: '#000000', text: '000339 kWh',
+        bulbX: 72, bulbY: 46, // NEW: Defaults for free-bulb
         rotation: 0, tiltX: 0, tiltY: 0, opacity: 0.85, edgeBlur: 0.6,
         glassOpacity: 0.3, dirtOpacity: 0.2, moireOpacity: 0.10,
         noise: true, ghost: true, flicker: true, zoom: 1,
@@ -830,6 +839,9 @@
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
+      // Make sure bulb defaults exist for old saves
+      if(state.bulbX === undefined) state.bulbX = defaults.bulbX;
+      if(state.bulbY === undefined) state.bulbY = defaults.bulbY;
 
       let memoryState = { unitFont: defaults.unitFont, unitX: defaults.unitX, unitY: defaults.unitY };
 
@@ -849,13 +861,16 @@
       function autoAdjustSystem() {
           if (state.cuMode) {
               state.unitFont = Math.max(12, state.font * 0.35); 
-              state.unitX = state.x + state.w - 55; 
+              state.unitX = state.x + state.w - 15; // Set explicitly to Right side
               state.unitY = state.y + (state.h * 0.1);
           } else if (state.lntMode) {
-              // Perfect adjusting for L&T kW h
               state.unitFont = Math.max(12, state.font * 0.38); 
-              state.unitX = state.x + state.w - 22; 
+              state.unitX = state.x + state.w - 18; // Set explicitly to Right side
               state.unitY = state.y + (state.h * 0.22);
+              
+              // Bulb Auto Adjust to Top-Left
+              state.bulbX = state.x + 2;
+              state.bulbY = state.y + 2;
           }
       }
 
@@ -878,24 +893,20 @@
             lntBulb.style.color = state.color;
             lntBulb.style.setProperty('--opacity', state.opacity);
             
-            // Positioning Bulb to Top-Left explicitly
-            lntBulb.style.left = '8%'; 
-            lntBulb.style.top = '15%'; 
-            lntBulb.style.transform = 'none'; 
-            lntBulb.style.width = '15%'; 
-            lntBulb.style.height = 'auto'; 
+            // Apply Draggable coordinates to Bulb
+            lntBulb.style.left = state.bulbX + '%';
+            lntBulb.style.top = state.bulbY + '%';
             
-            // Keep reading separated from bulb
             reading.style.paddingLeft = '0px'; 
-            reading.style.paddingRight = '20%'; 
+            reading.style.paddingRight = '10px'; 
             
-            // Re-introduced realistic gap in kW h
+            // Realistic Gap retained in text
             unitElem.innerHTML = `<div style="font-family: monospace; font-size: 1.1em; line-height: 0.9;">kW h</div>`;
             
         } else if(state.cuMode) {
             lntBulb.style.display = 'none';
             reading.style.paddingLeft = '0px';
-            reading.style.paddingRight = '30%'; 
+            reading.style.paddingRight = '10px'; 
             
             if (valText.includes('.')) {
                 unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 0.9;">
@@ -918,10 +929,12 @@
             unitElem.textContent = unitText;
         }
 
-        [reading, unitElem].forEach(el => {
-            el.style.color = state.color;
-            el.style.setProperty('--font-weight', state.fontWeight);
-            el.style.setProperty('--opacity', state.opacity);
+        [reading, unitElem, lntBulb].forEach(el => {
+            if(el) {
+                el.style.color = state.color;
+                el.style.setProperty('--font-weight', state.fontWeight);
+                el.style.setProperty('--opacity', state.opacity);
+            }
         });
         
         document.documentElement.style.setProperty('--glass-opacity', state.glassOpacity);
@@ -1089,9 +1102,10 @@
           });
       }
       
+      // DRAG & RESIZE SYSTEM
       let isDrag = false, startX, startY, startLeft, startTop;
       
-      function startDrag(e, el, isGroup) {
+      function startDrag(e, el, targetType) {
         if(e.target === resizer) return; 
         e.preventDefault(); 
         isDrag = true;
@@ -1101,8 +1115,14 @@
         
         startX = cx; 
         startY = cy; 
-        startLeft = isGroup ? state.x : state.unitX; 
-        startTop = isGroup ? state.y : state.unitY;
+        
+        if (targetType === 'group') {
+            startLeft = state.x; startTop = state.y;
+        } else if (targetType === 'unit') {
+            startLeft = state.unitX; startTop = state.unitY;
+        } else if (targetType === 'bulb') {
+            startLeft = state.bulbX; startTop = state.bulbY;
+        }
 
         const moveHandler = (ev) => {
             if(!isDrag) return;
@@ -1114,12 +1134,12 @@
             el.style.left = nx + '%';
             el.style.top = ny + '%';
             
-            if(isGroup) { 
-                state.x = nx; 
-                state.y = ny; 
-            } else { 
-                state.unitX = nx; 
-                state.unitY = ny; 
+            if(targetType === 'group') { 
+                state.x = nx; state.y = ny; 
+            } else if (targetType === 'unit') { 
+                state.unitX = nx; state.unitY = ny; 
+            } else if (targetType === 'bulb') {
+                state.bulbX = nx; state.bulbY = ny;
             }
         };
 
@@ -1138,11 +1158,15 @@
         window.addEventListener('touchend', stopHandler);
       }
       
-      readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, true));
-      readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, true));
+      readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, 'group'));
+      readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, 'group'));
       
-      unitElem.addEventListener('mousedown', (e) => startDrag(e, unitElem, false));
-      unitElem.addEventListener('touchstart', (e) => startDrag(e, unitElem, false));
+      unitElem.addEventListener('mousedown', (e) => startDrag(e, unitElem, 'unit'));
+      unitElem.addEventListener('touchstart', (e) => startDrag(e, unitElem, 'unit'));
+
+      // New Drag listener for Bulb
+      lntBulb.addEventListener('mousedown', (e) => startDrag(e, lntBulb, 'bulb'));
+      lntBulb.addEventListener('touchstart', (e) => startDrag(e, lntBulb, 'bulb'));
       
       resizer.addEventListener('mousedown', initResize); 
       resizer.addEventListener('touchstart', initResize);
@@ -1179,7 +1203,6 @@
               isResizing = false;
               window.removeEventListener('mousemove', doResize); 
               window.removeEventListener('mouseup', stopResize); 
-              window.removeEventListener('touchmove', doResize); 
               window.removeEventListener('touchmove', doResize); 
               window.removeEventListener('touchend', stopResize); 
               if(state.cuMode || state.lntMode) autoAdjustSystem(); 
@@ -1247,18 +1270,14 @@
             }
 
             if (state.lntMode) {
+                // Free Hand Bulb Export Logic
                 ctx.save();
-                const tx = (state.x / 100) * img.width;
-                const ty = (state.y / 100) * img.height;
-                const rw = (state.w / 100) * img.width;
-                const rh = (state.h / 100) * img.height;
+                const bx = (state.bulbX / 100) * img.width;
+                const by = (state.bulbY / 100) * img.height;
                 
-                ctx.translate(tx, ty); 
+                ctx.translate(bx, by); 
                 const rad = state.rotation * Math.PI / 180;
                 ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
-                
-                // Position bulb top-left inside the box
-                ctx.translate(rw * 0.08, rh * 0.15); 
                 
                 const bulbPath = new Path2D("M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z");
                 ctx.fillStyle = state.color;
@@ -1266,6 +1285,7 @@
                 ctx.globalAlpha = state.opacity;
                 if(state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
+                const rh = (state.h / 100) * img.height;
                 const scaleAmt = (rh * 0.35) / 24; 
                 ctx.scale(scaleAmt, scaleAmt);
                 ctx.translate(-12, -12); 
@@ -1282,7 +1302,8 @@
                 
                 let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
                 
-                let rightPaddingOffset = state.lntMode ? (state.w/100*img.width) * 0.28 : (state.cuMode ? (state.w/100*img.width) * 0.30 : 10);
+                // Separate padding check
+                let rightPaddingOffset = 10;
                 
                 for (let char of text) { 
                     ctx.fillText(char, xc + (state.w/100*img.width) - rightPaddingOffset, (state.h/100*img.height)/2); 
@@ -1347,7 +1368,7 @@
                     ctx.fillText("kW h", maxW - btmW, state.unitFont * 1.4);
                 }
             } else if (state.lntMode) {
-                // L&T Export kW h text (with realistic gap)
+                // L&T Export kW h text
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
                 ctx.fillText("kW h", 0, 0);
             } else {
