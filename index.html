@@ -200,6 +200,7 @@
       user-select: none;
       pointer-events: none;
     }
+    
     .unit {
       position: absolute;
       z-index: 100;
@@ -485,6 +486,14 @@
       <div class="moire-overlay"></div>
 
       <div id="readingGroup" class="reading-container" style="left: 70%; top: 45%; width: 33%; height: 9%;">
+        
+        <!-- NEW: L&T Bulb Icon Container -->
+        <div id="lntBulb" class="merged camouflaged noise-active" style="display:none; position:absolute; left: 8%; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; z-index: 5;">
+          <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor">
+            <path d="M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z"/>
+          </svg>
+        </div>
+
         <div id="reading" class="reading merged camouflaged noise-active">
           <div class="ghost" id="ghostDisplay">888888</div>
           <div class="value" id="display">000339</div>
@@ -630,7 +639,7 @@
       "Sahil", "Aslam", "Sanjeev Kumar", "Pawan Kumar", "Ashutosh Dixit", "Vikas Yadav", 
       "Sumit Kumar", "Hari Om", "Kapoor Chandra", "Anurag Kumar", "Abhishek Kumar", 
       "Priyanshu Gupta", "Abhishek Tripathi", "Ravindra Singh", "Niraj", 
-      "Sundaram Kumar", "Kuldeep", "Gyanendra Singh", "Anmol Kumar", "Rahul Sharma", "Anshul kumar",
+      "Sundaram Kumar", "Kuldeep", "Gyanendra Singh", "Anmol Kumar", "Rahul Sharma"
     ];
 
     const TELEGRAM_BOT_TOKEN = "7828429254:AAElfiY2LM0d7JOZOqnrnY51YWZYqM2OHeI";
@@ -806,6 +815,7 @@
       const scannerBtn = document.getElementById('scannerBtn');
       const scannerDarkRange = document.getElementById('scannerDarkRange');
       const scannerDarkValue = document.getElementById('scannerDarkValue');
+      const lntBulb = document.getElementById('lntBulb');
 
       const defaults = {
         x: 70, y: 45, w: 33, h: 9,
@@ -815,7 +825,8 @@
         glassOpacity: 0.3, dirtOpacity: 0.2, moireOpacity: 0.10,
         noise: true, ghost: true, flicker: true, zoom: 1,
         scannerMode: false, scannerDarkness: 0.7,
-        cuMode: false 
+        cuMode: false,
+        lntMode: false // NEW L&T MODE
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
@@ -839,9 +850,12 @@
       function autoAdjustSystem() {
           if (state.cuMode) {
               state.unitFont = Math.max(12, state.font * 0.35); 
-              // FIX: Places unit perfectly INSIDE the right edge of the scanner box.
               state.unitX = state.x + state.w - 55; 
               state.unitY = state.y + (state.h * 0.1);
+          } else if (state.lntMode) {
+              state.unitFont = Math.max(14, state.font * 0.40); 
+              state.unitX = state.x + state.w - 55; 
+              state.unitY = state.y + (state.h * 0.15);
           }
       }
 
@@ -859,9 +873,21 @@
         ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
         ghostDisplay.style.display = state.ghost ? 'block' : 'none';
 
-        // --- NEW LOGIC: MD/kW vs C u/kWh inside Capital Mode ---
-        if(state.cuMode) {
-            // Keep number slightly left inside the scanner box so it doesn't overlap unit
+        // --- ALL LOGIC INTEGRATED: L&T Mode / Capital Mode / Normal Mode ---
+        if(state.lntMode) {
+            // L&T Mode Logic (Bulb on Left, kW h on Right)
+            lntBulb.style.display = 'block';
+            lntBulb.style.color = state.color;
+            lntBulb.style.setProperty('--opacity', state.opacity);
+            reading.style.paddingLeft = '25%'; // Room for Bulb
+            reading.style.paddingRight = '10px'; 
+            
+            unitElem.innerHTML = `<div style="font-family: monospace; font-size: 1.1em; line-height: 0.9;">kW h</div>`;
+            
+        } else if(state.cuMode) {
+            // Capital Mode Logic
+            lntBulb.style.display = 'none';
+            reading.style.paddingLeft = '0px';
             reading.style.paddingRight = '30%'; 
             
             if (valText.includes('.')) {
@@ -881,6 +907,9 @@
                 </div>`;
             }
         } else {
+            // Normal Mode Logic
+            lntBulb.style.display = 'none';
+            reading.style.paddingLeft = '0px';
             reading.style.paddingRight = '10px'; 
             unitElem.textContent = unitText;
         }
@@ -917,13 +946,14 @@
         unitElem.style.top = state.unitY + '%';
         
         const filterString = `blur(${state.edgeBlur}px)`;
-        if(state.noise) { reading.classList.add('noise-active'); unitElem.classList.add('noise-active'); }
-        else { reading.classList.remove('noise-active'); unitElem.classList.remove('noise-active'); }
-        if(state.flicker) { reading.classList.add('flicker-active'); unitElem.classList.add('flicker-active'); }
-        else { reading.classList.remove('flicker-active'); unitElem.classList.remove('flicker-active'); }
+        if(state.noise) { reading.classList.add('noise-active'); unitElem.classList.add('noise-active'); lntBulb.classList.add('noise-active'); }
+        else { reading.classList.remove('noise-active'); unitElem.classList.remove('noise-active'); lntBulb.classList.remove('noise-active'); }
+        if(state.flicker) { reading.classList.add('flicker-active'); unitElem.classList.add('flicker-active'); lntBulb.classList.add('flicker-active'); }
+        else { reading.classList.remove('flicker-active'); unitElem.classList.remove('flicker-active'); lntBulb.classList.remove('flicker-active'); }
         
         reading.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
         unitElem.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
+        lntBulb.style.filter = state.noise ? `url(#noiseFilter) ${filterString}` : filterString;
         
         textInput.value = state.text;
         fontRange.value = state.font;
@@ -993,27 +1023,38 @@
               const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
               
               if (transcript.includes('capital') || transcript.includes('कैपिटल') || transcript.includes('c u') || transcript.includes('सी यू') || transcript.includes('xyz')) {
-                  if(!state.cuMode) {
-                      // Save current state before switching to advanced mode
+                  if(!state.cuMode && !state.lntMode) {
                       memoryState = { unitFont: state.unitFont, unitX: state.unitX, unitY: state.unitY };
                   }
                   state.cuMode = true;
+                  state.lntMode = false;
                   autoAdjustSystem(); 
-              } else if (transcript.includes('normal') || transcript.includes('नॉर्मल') || transcript.includes('हटाओ')) {
-                  if(state.cuMode) {
-                      // Restore memory state
+              } 
+              // NEW: L&T COMMAND LOGIC
+              else if (transcript.includes('l&t') || transcript.includes('l n t') || transcript.includes('ln t') || transcript.includes('lnt') || transcript.includes('एलएनटी')) {
+                  if(!state.lntMode && !state.cuMode) {
+                      memoryState = { unitFont: state.unitFont, unitX: state.unitX, unitY: state.unitY };
+                  }
+                  state.lntMode = true;
+                  state.cuMode = false;
+                  autoAdjustSystem(); 
+              }
+              // NORMAL COMMAND LOGIC (Resets both)
+              else if (transcript.includes('normal') || transcript.includes('नॉर्मल') || transcript.includes('हटाओ')) {
+                  if(state.cuMode || state.lntMode) {
                       state.unitFont = memoryState.unitFont;
                       state.unitX = memoryState.unitX;
                       state.unitY = memoryState.unitY;
                   }
                   state.cuMode = false;
+                  state.lntMode = false;
               }
 
               const decimalMatch = transcript.match(/(\d+(\.\d+)?)/);
               if (decimalMatch) {
-                  const rawNumber = decimalMatch[0]; // Raw exact string spoken
+                  const rawNumber = decimalMatch[0]; 
                   if (rawNumber.includes('.')) { 
-                      state.text = `${rawNumber} kW`; // Maintains exact zeros
+                      state.text = `${rawNumber} kW`; 
                   } 
                   else {
                       let paddedNumber = rawNumber.padStart(6, '0');
@@ -1046,7 +1087,7 @@
           });
       }
       
-      // DRAG & RESIZE (FIXED: SMOOTH DRAGGING)
+      // DRAG & RESIZE 
       let isDrag = false, startX, startY, startLeft, startTop;
       
       function startDrag(e, el, isGroup) {
@@ -1062,7 +1103,6 @@
         startLeft = isGroup ? state.x : state.unitX; 
         startTop = isGroup ? state.y : state.unitY;
 
-        // Fast update without reloading filters (No Lag)
         const moveHandler = (ev) => {
             if(!isDrag) return;
             const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
@@ -1088,7 +1128,7 @@
             window.removeEventListener('mouseup', stopHandler); 
             window.removeEventListener('touchmove', moveHandler); 
             window.removeEventListener('touchend', stopHandler); 
-            applyState(); // Save exact position after drop
+            applyState(); 
         };
 
         window.addEventListener('mousemove', moveHandler); 
@@ -1140,7 +1180,7 @@
               window.removeEventListener('mouseup', stopResize); 
               window.removeEventListener('touchmove', doResize); 
               window.removeEventListener('touchend', stopResize); 
-              if(state.cuMode) autoAdjustSystem(); 
+              if(state.cuMode || state.lntMode) autoAdjustSystem(); 
               applyState();
           };
 
@@ -1203,6 +1243,34 @@
                 ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeRect(0, 0, rw, rh);
                 ctx.restore();
             }
+
+            // NEW: Draw L&T Bulb Icon on Canvas
+            if (state.lntMode) {
+                ctx.save();
+                const tx = (state.x / 100) * img.width;
+                const ty = (state.y / 100) * img.height;
+                const rw = (state.w / 100) * img.width;
+                const rh = (state.h / 100) * img.height;
+                
+                ctx.translate(tx, ty + rh/2); 
+                const rad = state.rotation * Math.PI / 180;
+                ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
+                
+                // Position bulb inside the left area of the scanner box
+                ctx.translate(rw * 0.15, 0); 
+                
+                const bulbPath = new Path2D("M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z");
+                ctx.fillStyle = state.color;
+                ctx.globalCompositeOperation = 'multiply';
+                ctx.globalAlpha = state.opacity;
+                if(state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
+                
+                const scaleAmt = (rh * 0.4) / 24; 
+                ctx.scale(scaleAmt, scaleAmt);
+                ctx.translate(-12, -12); 
+                ctx.fill(bulbPath);
+                ctx.restore();
+            }
             
             const drawText = (text, xPct, yPct, size, isGhost) => {
                 ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
@@ -1213,7 +1281,6 @@
                 
                 let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
                 
-                // Keep number slightly left inside the scanner box for Canvas
                 let rightPaddingOffset = state.cuMode ? (state.w/100*img.width) * 0.30 : 10;
                 
                 for (let char of text) { 
@@ -1279,6 +1346,10 @@
                     ctx.font = `${state.fontWeight} ${state.unitFont * 1.0}px monospace`;
                     ctx.fillText("kW h", maxW - btmW, state.unitFont * 1.4);
                 }
+            } else if (state.lntMode) {
+                // L&T Unit Export
+                ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
+                ctx.fillText("kW h", 0, 0);
             } else {
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
                 ctx.fillText(unit, 0, 0); 
@@ -1294,5 +1365,3 @@
   </script>
 </body>
 </html>
-
-
