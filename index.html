@@ -105,6 +105,7 @@
       z-index: 7;
     }
 
+    /* SEPARATED CONTAINERS: Reading vs Scanner */
     .reading-container {
       position: absolute;
       z-index: 100; 
@@ -112,15 +113,24 @@
       user-select: none;
       transform-style: preserve-3d;
       transform: rotate(var(--rotation)) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(1px);
+    }
+    
+    .scanner-container {
+      position: absolute;
+      z-index: 90; 
+      cursor: grab;
+      user-select: none;
+      transform-style: preserve-3d;
+      transform: rotate(var(--rotation)) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(1px);
       box-shadow: 0 0 0 0 rgba(0,0,0,0);
       transition: box-shadow 0.2s ease, background 0.2s ease;
+      border-radius: 4px;
     }
     
     .scanner-mode-active {
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, var(--scanner-darkness));
       background: rgba(255, 255, 255, var(--scanner-glow));
       outline: 2px dashed rgba(255, 255, 255, 0.3);
-      border-radius: 4px;
     }
 
     @keyframes ac-flicker {
@@ -501,6 +511,10 @@
         </svg>
       </div>
 
+      <div id="scannerBox" class="scanner-container" style="display:none;">
+        <div class="resizer" id="scannerResizer"></div>
+      </div>
+
       <div id="readingGroup" class="reading-container" style="left: 70%; top: 45%; width: 33%; height: 9%;">
         <div id="reading" class="reading merged camouflaged noise-active">
           <div class="ghost" id="ghostDisplay">888888</div>
@@ -790,6 +804,8 @@
     (function() {
       const wrap = document.getElementById('meterWrap');
       const readingGroup = document.getElementById('readingGroup');
+      const scannerBox = document.getElementById('scannerBox');
+      const scannerResizer = document.getElementById('scannerResizer');
       const reading = document.getElementById('reading');
       const display = document.getElementById('display');
       const ghostDisplay = document.getElementById('ghostDisplay');
@@ -826,7 +842,8 @@
       const lntBulb = document.getElementById('lntBulb');
 
       const defaults = {
-        x: 70, y: 45, w: 33, h: 9,
+        x: 70, y: 45, w: 33, h: 9, // Reading box position & size
+        scanX: 70, scanY: 45, scanW: 33, scanH: 9, // Scanner box position & size
         font: 36, unitFont: 16, fontWeight: 700,
         unitX: 70, unitY: 50, color: '#000000', text: '000339 kWh',
         bulbX: 72, bulbY: 46, 
@@ -839,8 +856,14 @@
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
+      
+      // Upgrade logic for older saves to include new separated scanner/bulb coordinates
       if(state.bulbX === undefined) state.bulbX = defaults.bulbX;
       if(state.bulbY === undefined) state.bulbY = defaults.bulbY;
+      if(state.scanX === undefined) state.scanX = state.x;
+      if(state.scanY === undefined) state.scanY = state.y;
+      if(state.scanW === undefined) state.scanW = state.w;
+      if(state.scanH === undefined) state.scanH = state.h;
 
       let memoryState = { unitFont: defaults.unitFont, unitX: defaults.unitX, unitY: defaults.unitY };
 
@@ -858,29 +881,48 @@
       ];
 
       function autoAdjustSystem() {
-          // Scanner Box defines the "Screen" limits.
+          // Now Scanner Box is the true "Display Boundary" for logic
           if (state.cuMode) {
               state.unitFont = Math.max(12, state.font * 0.35); 
-              // Set Unit Right Side inside the box
-              state.unitX = state.x + state.w - 18; 
-              state.unitY = state.y + (state.h * 0.1);
+              // Lock Unit to Right Side inside the Scanner Box
+              state.unitX = state.scanX + state.scanW - 18; 
+              state.unitY = state.scanY + (state.scanH * 0.1);
           } else if (state.lntMode) {
               state.unitFont = Math.max(12, state.font * 0.38); 
-              // Set Unit Right Side inside the box
-              state.unitX = state.x + state.w - 18; 
-              state.unitY = state.y + (state.h * 0.22);
+              // Lock Unit to Right Side inside the Scanner Box
+              state.unitX = state.scanX + state.scanW - 18; 
+              state.unitY = state.scanY + (state.scanH * 0.22);
               
-              // Bulb Auto Adjust to Top-Left of Scanner Box
-              state.bulbX = state.x + (state.w * 0.08); 
-              state.bulbY = state.y + (state.h * 0.20); 
+              // Bulb Auto Adjust to Top-Left inside the Scanner Box
+              state.bulbX = state.scanX + (state.scanW * 0.08); 
+              state.bulbY = state.scanY + (state.scanH * 0.20); 
           }
       }
 
       function applyState() {
+        // Independent Reading Group Location
         readingGroup.style.left = state.x + '%';
         readingGroup.style.top = state.y + '%';
         readingGroup.style.width = state.w + '%';
         readingGroup.style.height = state.h + '%';
+        
+        // Independent Scanner Box Location
+        if (state.scannerMode) {
+            scannerBox.style.display = 'block';
+            scannerBox.classList.add('scanner-mode-active');
+            scannerBtn.textContent = 'Scanner: ON';
+            scannerBtn.classList.add('active');
+        } else {
+            scannerBox.style.display = 'none';
+            scannerBox.classList.remove('scanner-mode-active');
+            scannerBtn.textContent = 'Scanner: OFF';
+            scannerBtn.classList.remove('active');
+        }
+        
+        scannerBox.style.left = state.scanX + '%';
+        scannerBox.style.top = state.scanY + '%';
+        scannerBox.style.width = state.scanW + '%';
+        scannerBox.style.height = state.scanH + '%';
         
         const parts = state.text.split(' ');
         const valText = parts.shift() || '';
@@ -946,16 +988,6 @@
         document.documentElement.style.setProperty('--tilt-y', state.tiltY + 'deg');
         document.documentElement.style.setProperty('--zoom', state.zoom);
         document.documentElement.style.setProperty('--scanner-darkness', state.scannerDarkness);
-        
-        if(state.scannerMode) {
-            readingGroup.classList.add('scanner-mode-active');
-            scannerBtn.textContent = 'Scanner: ON';
-            scannerBtn.classList.add('active');
-        } else {
-            readingGroup.classList.remove('scanner-mode-active');
-            scannerBtn.textContent = 'Scanner: OFF';
-            scannerBtn.classList.remove('active');
-        }
         
         display.style.fontSize = state.font + 'px';
         ghostDisplay.style.fontSize = state.font + 'px';
@@ -1103,10 +1135,12 @@
           });
       }
       
+      // DRAG & RESIZE SYSTEM
       let isDrag = false, startX, startY, startLeft, startTop;
       
       function startDrag(e, el, targetType) {
-        if(e.target === resizer) return; 
+        // Stop drag if clicking the resizer
+        if(e.target === resizer || e.target === scannerResizer) return; 
         e.preventDefault(); 
         isDrag = true;
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
@@ -1122,6 +1156,8 @@
             startLeft = state.unitX; startTop = state.unitY;
         } else if (targetType === 'bulb') {
             startLeft = state.bulbX; startTop = state.bulbY;
+        } else if (targetType === 'scanner') {
+            startLeft = state.scanX; startTop = state.scanY;
         }
 
         const moveHandler = (ev) => {
@@ -1140,6 +1176,8 @@
                 state.unitX = nx; state.unitY = ny; 
             } else if (targetType === 'bulb') {
                 state.bulbX = nx; state.bulbY = ny;
+            } else if (targetType === 'scanner') {
+                state.scanX = nx; state.scanY = ny;
             }
         };
 
@@ -1158,8 +1196,12 @@
         window.addEventListener('touchend', stopHandler);
       }
       
+      // Attach Drag Events
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, 'group'));
       readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, 'group'));
+      
+      scannerBox.addEventListener('mousedown', (e) => startDrag(e, scannerBox, 'scanner'));
+      scannerBox.addEventListener('touchstart', (e) => startDrag(e, scannerBox, 'scanner'));
       
       unitElem.addEventListener('mousedown', (e) => startDrag(e, unitElem, 'unit'));
       unitElem.addEventListener('touchstart', (e) => startDrag(e, unitElem, 'unit'));
@@ -1167,13 +1209,18 @@
       lntBulb.addEventListener('mousedown', (e) => startDrag(e, lntBulb, 'bulb'));
       lntBulb.addEventListener('touchstart', (e) => startDrag(e, lntBulb, 'bulb'));
       
-      resizer.addEventListener('mousedown', initResize); 
-      resizer.addEventListener('touchstart', initResize);
+      // Attach Resize Events
+      resizer.addEventListener('mousedown', (e) => initResize(e, 'group')); 
+      resizer.addEventListener('touchstart', (e) => initResize(e, 'group'));
       
-      function initResize(e) {
+      scannerResizer.addEventListener('mousedown', (e) => initResize(e, 'scanner')); 
+      scannerResizer.addEventListener('touchstart', (e) => initResize(e, 'scanner'));
+      
+      function initResize(e, targetType) {
           e.stopPropagation(); 
           e.preventDefault();
-          const sW = state.w, sH = state.h;
+          const sW = targetType === 'scanner' ? state.scanW : state.w;
+          const sH = targetType === 'scanner' ? state.scanH : state.h;
           const sx = e.touches ? e.touches[0].clientX : e.clientX;
           const sy = e.touches ? e.touches[0].clientY : e.clientY;
           const rect = wrap.getBoundingClientRect();
@@ -1188,14 +1235,20 @@
               let newW = Math.max(5, sW + ((mcx - sx) / rect.width * 100));
               let newH = Math.max(2, sH + ((mcy - sy) / rect.height * 100));
               
-              readingGroup.style.width = newW + '%';
-              readingGroup.style.height = newH + '%';
-              
-              state.w = newW;
-              state.h = newH;
-              state.font = Math.round((newH / 100) * rect.height * 0.6); 
-              display.style.fontSize = state.font + 'px';
-              ghostDisplay.style.fontSize = state.font + 'px';
+              if(targetType === 'scanner') {
+                  scannerBox.style.width = newW + '%';
+                  scannerBox.style.height = newH + '%';
+                  state.scanW = newW;
+                  state.scanH = newH;
+              } else {
+                  readingGroup.style.width = newW + '%';
+                  readingGroup.style.height = newH + '%';
+                  state.w = newW;
+                  state.h = newH;
+                  state.font = Math.round((newH / 100) * rect.height * 0.6); 
+                  display.style.fontSize = state.font + 'px';
+                  ghostDisplay.style.fontSize = state.font + 'px';
+              }
           };
 
           const stopResize = () => { 
@@ -1259,9 +1312,10 @@
         img.onload = () => {
             const z = state.zoom; canvas.width = img.width * z; canvas.height = img.height * z; ctx.scale(z, z); ctx.drawImage(img, 0, 0);
             
+            // Scanner Export Mapping 
             if(state.scannerMode) {
                 ctx.save(); ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; ctx.fillRect(0,0,img.width, img.height);
-                const rx = (state.x / 100) * img.width, ry = (state.y / 100) * img.height, rw = (state.w / 100) * img.width, rh = (state.h / 100) * img.height;
+                const rx = (state.scanX / 100) * img.width, ry = (state.scanY / 100) * img.height, rw = (state.scanW / 100) * img.width, rh = (state.scanH / 100) * img.height;
                 ctx.translate(rx, ry); ctx.rotate(state.rotation * Math.PI / 180);
                 ctx.globalCompositeOperation = 'destination-out'; ctx.fillRect(0, 0, rw, rh);
                 ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeRect(0, 0, rw, rh);
@@ -1283,7 +1337,7 @@
                 ctx.globalAlpha = state.opacity;
                 if(state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
-                const rh = (state.h / 100) * img.height;
+                const rh = (state.scanH / 100) * img.height; // Bulb scaled roughly relative to scanner size
                 const scaleAmt = (rh * 0.35) / 24; 
                 ctx.scale(scaleAmt, scaleAmt);
                 ctx.translate(-12, -12); 
