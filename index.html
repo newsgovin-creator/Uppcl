@@ -235,16 +235,14 @@
       font-family: Arial, sans-serif;
       font-weight: normal; /* Realistic Thin LCD Look */
       letter-spacing: 0px;
-      opacity: calc(var(--opacity) * 0.7); /* Slightly faded */
+      /* Opacity perfectly matches reading now */
     }
 
     .oneb-icon {
       display: flex;
-      align-items: center;
+      align-items: flex-end; /* Align 1 and B to the bottom */
       justify-content: center;
-      border: 1px solid currentColor;
-      padding: 2px 3px;
-      border-radius: 1px;
+      padding: 0;
     }
 
     .free-bulb {
@@ -757,7 +755,7 @@
         if (devData) {
           if (devData.name !== selectedName) {
             loginError.style.display = 'block';
-            loginError.innerText = `❌ यह डिवाइस '${devData.name}' के नाम पर रजिस्टर है। आप gap से लॉगिन नहीं कर सकते।`;
+            loginError.innerText = `❌ यह डिवाइस '${devData.name}' के नाम पर रजिस्टर है। आप इस फोन से लॉगिन नहीं कर सकते।`;
             return;
           }
 
@@ -915,14 +913,13 @@
           } else if (state.lntMode) {
               // --- SCANNER BOUNDARY MATH FOR L&T ---
               if (state.text.includes('.')) {
-                  // L&T DECIMAL (0.03 kW)
                   state.unitFont = Math.max(12, state.font * 0.35); 
                   
                   // kW aligns middle-right inside scanner box
                   state.unitX = state.scanX + state.scanW - 12; 
                   state.unitY = state.scanY + (state.scanH * 0.40); 
                   
-                  // MD aligns Top-Right inside scanner box (adjusted closer to the edge)
+                  // MD aligns Top-Right inside scanner box
                   state.mdX = state.scanX + state.scanW - 8;
                   state.mdY = state.scanY + 5; 
                   
@@ -984,7 +981,7 @@
             if (valText.includes('.')) {
                 // DECIMAL LAYOUT: Show separate MD and 1 B
                 mdDisplay.style.display = 'block';
-                onebDisplay.style.display = 'flex'; // Changed to flex for inner alignment
+                onebDisplay.style.display = 'flex'; 
                 
                 mdDisplay.style.fontSize = (state.unitFont * 0.6) + 'px';
                 mdDisplay.style.left = state.mdX + '%';
@@ -993,8 +990,10 @@
                 onebDisplay.style.left = state.onebX + '%';
                 onebDisplay.style.top = state.onebY + '%';
                 
-                // NEW REALISTIC 1B DESIGN (Big '1' in DS-Digital, Small 'B' in Sans-serif)
-                onebDisplay.innerHTML = `<span style="font-family:'DS-Digital', monospace; font-size:${state.unitFont * 0.8}px; margin-right: 2px;">1</span><span style="font-family: sans-serif; font-size:${state.unitFont * 0.4}px; font-weight: bold;">B</span>`;
+                // TRUE REALISTIC 1B DESIGN: Big '1', Solid Black Block with 'B' inside
+                // In mix-blend-mode: multiply, white (#fff) becomes transparent, showing the green meter screen
+                onebDisplay.innerHTML = `<span style="font-family:'DS-Digital', monospace; font-size:${state.unitFont * 1.1}px; margin-right: 4px; display: inline-block; transform: translateY(2px);">1</span>` + 
+                                        `<span style="font-family: sans-serif; font-size:${state.unitFont * 0.45}px; font-weight: bold; background-color: currentColor; color: #fff; padding: 1px 3px; display: inline-block; border-radius: 1px; vertical-align: bottom;">B</span>`;
                 
                 unitElem.innerHTML = `kW`;
             } else {
@@ -1268,7 +1267,6 @@
         window.addEventListener('touchend', stopHandler);
       }
       
-      // Attach Drag Events
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, 'group'));
       readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, 'group'));
       
@@ -1287,7 +1285,6 @@
       onebDisplay.addEventListener('mousedown', (e) => startDrag(e, onebDisplay, 'oneb'));
       onebDisplay.addEventListener('touchstart', (e) => startDrag(e, onebDisplay, 'oneb'));
       
-      // Attach Resize Events
       resizer.addEventListener('mousedown', (e) => initResize(e, 'group')); 
       resizer.addEventListener('touchstart', (e) => initResize(e, 'group'));
       
@@ -1341,7 +1338,6 @@
 
           window.addEventListener('mousemove', doResize); 
           window.addEventListener('mouseup', stopResize); 
-          window.addEventListener('touchmove', doResize); 
           window.addEventListener('touchmove', doResize); 
           window.addEventListener('touchend', stopResize);
       }
@@ -1446,56 +1442,67 @@
             if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
             drawText(val, state.x, state.y, state.font, false);
             
-            // L&T DECIMAL MD Export (Thin & Faded look)
+            // L&T DECIMAL MD & 1B Export 
             if(state.lntMode && val.includes('.')) {
+                
+                // MD Export
                 ctx.save();
                 const mdx = (state.mdX / 100) * img.width, mdy = (state.mdY / 100) * img.height; 
                 ctx.translate(mdx, mdy);
                 ctx.rotate(state.rotation * Math.PI / 180); 
                 ctx.globalCompositeOperation = 'multiply'; 
-                ctx.globalAlpha = state.opacity * 0.7; // Faded for LCD effect
+                ctx.globalAlpha = state.opacity; // Restored 100% realistic opacity
                 ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
                 
-                ctx.font = `normal ${state.unitFont * 0.6}px Arial, sans-serif`; // Not bold
+                ctx.font = `normal ${state.unitFont * 0.6}px Arial, sans-serif`;
                 ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                 ctx.fillText("MD", 0, 0);
                 ctx.restore();
 
-                // L&T DECIMAL 1 B Export (Big '1', Small 'B' in a box)
+                // 1B Export (True Design)
                 ctx.save();
                 const obx = (state.onebX / 100) * img.width, oby = (state.onebY / 100) * img.height; 
                 ctx.translate(obx, oby);
                 ctx.rotate(state.rotation * Math.PI / 180); 
+                
+                let digitFont = `${state.fontWeight} ${state.unitFont * 1.1}px 'DS-Digital', monospace`;
+                let bFont = `bold ${state.unitFont * 0.45}px sans-serif`;
+                
+                // Draw large '1'
                 ctx.globalCompositeOperation = 'multiply'; 
                 ctx.globalAlpha = state.opacity; 
                 ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
                 
                 ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-                
-                let digitFont = `${state.fontWeight} ${state.unitFont * 0.8}px 'DS-Digital', monospace`;
-                let bFont = `bold ${state.unitFont * 0.4}px sans-serif`;
-                
                 ctx.font = digitFont;
+                ctx.fillText("1", 0, 0);
                 let w1 = ctx.measureText("1").width;
-                
+
+                // Draw filled 'B' block using an offscreen canvas to cut out the letter B
                 ctx.font = bFont;
-                let wB = ctx.measureText("B").width;
+                let textB_W = ctx.measureText("B").width;
+                let padX = 3; let padY = 2;
+                let boxW = textB_W + (padX * 2);
+                let boxH = state.unitFont * 0.6;
                 
-                let totalW = w1 + wB + 6;
-                let boxH = state.unitFont * 0.9;
+                let tCanvas = document.createElement('canvas');
+                tCanvas.width = boxW + 2; 
+                tCanvas.height = boxH + 2;
+                let tCtx = tCanvas.getContext('2d');
                 
-                ctx.strokeStyle = state.color;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(0, 0, totalW, boxH);
+                tCtx.fillStyle = state.color;
+                tCtx.fillRect(0, 0, boxW, boxH);
                 
-                ctx.font = digitFont;
-                ctx.fillText("1", 2, 0);
-                
-                ctx.font = bFont;
-                ctx.fillText("B", w1 + 4, boxH * 0.4);
-                
+                tCtx.globalCompositeOperation = 'destination-out';
+                tCtx.font = bFont;
+                tCtx.textAlign = 'left'; tCtx.textBaseline = 'top';
+                tCtx.fillText("B", padX, padY);
+
+                // Multiply the block onto main canvas
+                ctx.drawImage(tCanvas, w1 + 4, state.unitFont * 0.5); // align to bottom
+
                 ctx.restore();
             }
 
@@ -1561,3 +1568,5 @@
   </script>
 </body>
 </html>
+
+```
