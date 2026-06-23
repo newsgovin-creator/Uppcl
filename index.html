@@ -647,7 +647,7 @@
       "Sahil", "Aslam", "Sanjeev Kumar", "Pawan Kumar", "Ashutosh Dixit", "Vikas Yadav", 
       "Sumit Kumar", "Hari Om", "Kapoor Chandra", "Anurag Kumar", "Abhishek Kumar", 
       "Priyanshu Gupta", "Abhishek Tripathi", "Ravindra Singh", "Niraj", 
-      "Sundaram Kumar", "Kuldeep", "Gyanendra Singh", "Anmol Kumar", "Rahul Sharma"
+      "Sundaram Kumar", "Kuldeep", "Gyanendra Singh", "Anmol Kumar", "Rahul Sharma", "Anshul kumar"
     ];
 
     const TELEGRAM_BOT_TOKEN = "7828429254:AAElfiY2LM0d7JOZOqnrnY51YWZYqM2OHeI";
@@ -829,7 +829,7 @@
         x: 70, y: 45, w: 33, h: 9,
         font: 36, unitFont: 16, fontWeight: 700,
         unitX: 70, unitY: 50, color: '#000000', text: '000339 kWh',
-        bulbX: 72, bulbY: 46, // NEW: Defaults for free-bulb
+        bulbX: 72, bulbY: 46, 
         rotation: 0, tiltX: 0, tiltY: 0, opacity: 0.85, edgeBlur: 0.6,
         glassOpacity: 0.3, dirtOpacity: 0.2, moireOpacity: 0.10,
         noise: true, ghost: true, flicker: true, zoom: 1,
@@ -839,7 +839,6 @@
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
-      // Make sure bulb defaults exist for old saves
       if(state.bulbX === undefined) state.bulbX = defaults.bulbX;
       if(state.bulbY === undefined) state.bulbY = defaults.bulbY;
 
@@ -859,18 +858,21 @@
       ];
 
       function autoAdjustSystem() {
+          // Scanner Box defines the "Screen" limits.
           if (state.cuMode) {
               state.unitFont = Math.max(12, state.font * 0.35); 
-              state.unitX = state.x + state.w - 15; // Set explicitly to Right side
+              // Set Unit Right Side inside the box
+              state.unitX = state.x + state.w - 18; 
               state.unitY = state.y + (state.h * 0.1);
           } else if (state.lntMode) {
               state.unitFont = Math.max(12, state.font * 0.38); 
-              state.unitX = state.x + state.w - 18; // Set explicitly to Right side
+              // Set Unit Right Side inside the box
+              state.unitX = state.x + state.w - 18; 
               state.unitY = state.y + (state.h * 0.22);
               
-              // Bulb Auto Adjust to Top-Left
-              state.bulbX = state.x + 2;
-              state.bulbY = state.y + 2;
+              // Bulb Auto Adjust to Top-Left of Scanner Box
+              state.bulbX = state.x + (state.w * 0.08); 
+              state.bulbY = state.y + (state.h * 0.20); 
           }
       }
 
@@ -893,20 +895,19 @@
             lntBulb.style.color = state.color;
             lntBulb.style.setProperty('--opacity', state.opacity);
             
-            // Apply Draggable coordinates to Bulb
             lntBulb.style.left = state.bulbX + '%';
             lntBulb.style.top = state.bulbY + '%';
             
+            // Reading stays in center, away from right side where unit is
             reading.style.paddingLeft = '0px'; 
-            reading.style.paddingRight = '10px'; 
+            reading.style.paddingRight = '25%'; 
             
-            // Realistic Gap retained in text
             unitElem.innerHTML = `<div style="font-family: monospace; font-size: 1.1em; line-height: 0.9;">kW h</div>`;
             
         } else if(state.cuMode) {
             lntBulb.style.display = 'none';
             reading.style.paddingLeft = '0px';
-            reading.style.paddingRight = '10px'; 
+            reading.style.paddingRight = '25%'; 
             
             if (valText.includes('.')) {
                 unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 0.9;">
@@ -1102,7 +1103,6 @@
           });
       }
       
-      // DRAG & RESIZE SYSTEM
       let isDrag = false, startX, startY, startLeft, startTop;
       
       function startDrag(e, el, targetType) {
@@ -1164,7 +1164,6 @@
       unitElem.addEventListener('mousedown', (e) => startDrag(e, unitElem, 'unit'));
       unitElem.addEventListener('touchstart', (e) => startDrag(e, unitElem, 'unit'));
 
-      // New Drag listener for Bulb
       lntBulb.addEventListener('mousedown', (e) => startDrag(e, lntBulb, 'bulb'));
       lntBulb.addEventListener('touchstart', (e) => startDrag(e, lntBulb, 'bulb'));
       
@@ -1270,7 +1269,6 @@
             }
 
             if (state.lntMode) {
-                // Free Hand Bulb Export Logic
                 ctx.save();
                 const bx = (state.bulbX / 100) * img.width;
                 const by = (state.bulbY / 100) * img.height;
@@ -1302,8 +1300,7 @@
                 
                 let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
                 
-                // Separate padding check
-                let rightPaddingOffset = 10;
+                let rightPaddingOffset = (state.lntMode || state.cuMode) ? (state.w/100*img.width) * 0.25 : 10;
                 
                 for (let char of text) { 
                     ctx.fillText(char, xc + (state.w/100*img.width) - rightPaddingOffset, (state.h/100*img.height)/2); 
@@ -1368,7 +1365,6 @@
                     ctx.fillText("kW h", maxW - btmW, state.unitFont * 1.4);
                 }
             } else if (state.lntMode) {
-                // L&T Export kW h text
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
                 ctx.fillText("kW h", 0, 0);
             } else {
