@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -487,8 +488,7 @@
 
       <div id="readingGroup" class="reading-container" style="left: 70%; top: 45%; width: 33%; height: 9%;">
         
-        <!-- NEW: L&T Bulb Icon Container -->
-        <div id="lntBulb" class="merged camouflaged noise-active" style="display:none; position:absolute; left: 8%; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; z-index: 5;">
+        <div id="lntBulb" class="merged camouflaged noise-active" style="display:none; position:absolute; z-index: 5;">
           <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor">
             <path d="M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z"/>
           </svg>
@@ -826,12 +826,11 @@
         noise: true, ghost: true, flicker: true, zoom: 1,
         scannerMode: false, scannerDarkness: 0.7,
         cuMode: false,
-        lntMode: false // NEW L&T MODE
+        lntMode: false 
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
 
-      // Memory state for 'Normal' return
       let memoryState = { unitFont: defaults.unitFont, unitX: defaults.unitX, unitY: defaults.unitY };
 
       const meterImages = [
@@ -853,9 +852,10 @@
               state.unitX = state.x + state.w - 55; 
               state.unitY = state.y + (state.h * 0.1);
           } else if (state.lntMode) {
-              state.unitFont = Math.max(14, state.font * 0.40); 
-              state.unitX = state.x + state.w - 55; 
-              state.unitY = state.y + (state.h * 0.15);
+              // Perfect adjusting for L&T kW h
+              state.unitFont = Math.max(12, state.font * 0.38); 
+              state.unitX = state.x + state.w - 22; 
+              state.unitY = state.y + (state.h * 0.22);
           }
       }
 
@@ -873,31 +873,36 @@
         ghostDisplay.textContent = state.ghost ? valText.replace(/[0-9.]/g, '8') : '';
         ghostDisplay.style.display = state.ghost ? 'block' : 'none';
 
-        // --- ALL LOGIC INTEGRATED: L&T Mode / Capital Mode / Normal Mode ---
         if(state.lntMode) {
-            // L&T Mode Logic (Bulb on Left, kW h on Right)
             lntBulb.style.display = 'block';
             lntBulb.style.color = state.color;
             lntBulb.style.setProperty('--opacity', state.opacity);
-            reading.style.paddingLeft = '25%'; // Room for Bulb
-            reading.style.paddingRight = '10px'; 
             
+            // Positioning Bulb to Top-Left explicitly
+            lntBulb.style.left = '8%'; 
+            lntBulb.style.top = '15%'; 
+            lntBulb.style.transform = 'none'; 
+            lntBulb.style.width = '15%'; 
+            lntBulb.style.height = 'auto'; 
+            
+            // Keep reading separated from bulb
+            reading.style.paddingLeft = '0px'; 
+            reading.style.paddingRight = '20%'; 
+            
+            // Re-introduced realistic gap in kW h
             unitElem.innerHTML = `<div style="font-family: monospace; font-size: 1.1em; line-height: 0.9;">kW h</div>`;
             
         } else if(state.cuMode) {
-            // Capital Mode Logic
             lntBulb.style.display = 'none';
             reading.style.paddingLeft = '0px';
             reading.style.paddingRight = '30%'; 
             
             if (valText.includes('.')) {
-                // Point Number Logic -> Show MD / kW
                 unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 0.9;">
                     <div style="font-family:'DS-Digital', monospace; font-size:1.4em;">MD</div>
                     <div style="font-family:monospace; font-size:1.1em; margin-top:2px;">kW</div>
                 </div>`;
             } else {
-                // Normal Number Logic -> Show C u / kW h
                 unitElem.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; line-height: 0.9;">
                     <div style="display:flex; align-items:flex-end; margin-bottom: 2px;">
                         <span style="font-family:'DS-Digital', monospace; font-size:1.7em;">C</span>
@@ -907,7 +912,6 @@
                 </div>`;
             }
         } else {
-            // Normal Mode Logic
             lntBulb.style.display = 'none';
             reading.style.paddingLeft = '0px';
             reading.style.paddingRight = '10px'; 
@@ -1030,7 +1034,6 @@
                   state.lntMode = false;
                   autoAdjustSystem(); 
               } 
-              // NEW: L&T COMMAND LOGIC
               else if (transcript.includes('l&t') || transcript.includes('l n t') || transcript.includes('ln t') || transcript.includes('lnt') || transcript.includes('एलएनटी')) {
                   if(!state.lntMode && !state.cuMode) {
                       memoryState = { unitFont: state.unitFont, unitX: state.unitX, unitY: state.unitY };
@@ -1039,7 +1042,6 @@
                   state.cuMode = false;
                   autoAdjustSystem(); 
               }
-              // NORMAL COMMAND LOGIC (Resets both)
               else if (transcript.includes('normal') || transcript.includes('नॉर्मल') || transcript.includes('हटाओ')) {
                   if(state.cuMode || state.lntMode) {
                       state.unitFont = memoryState.unitFont;
@@ -1087,7 +1089,6 @@
           });
       }
       
-      // DRAG & RESIZE 
       let isDrag = false, startX, startY, startLeft, startTop;
       
       function startDrag(e, el, isGroup) {
@@ -1179,6 +1180,7 @@
               window.removeEventListener('mousemove', doResize); 
               window.removeEventListener('mouseup', stopResize); 
               window.removeEventListener('touchmove', doResize); 
+              window.removeEventListener('touchmove', doResize); 
               window.removeEventListener('touchend', stopResize); 
               if(state.cuMode || state.lntMode) autoAdjustSystem(); 
               applyState();
@@ -1244,7 +1246,6 @@
                 ctx.restore();
             }
 
-            // NEW: Draw L&T Bulb Icon on Canvas
             if (state.lntMode) {
                 ctx.save();
                 const tx = (state.x / 100) * img.width;
@@ -1252,12 +1253,12 @@
                 const rw = (state.w / 100) * img.width;
                 const rh = (state.h / 100) * img.height;
                 
-                ctx.translate(tx, ty + rh/2); 
+                ctx.translate(tx, ty); 
                 const rad = state.rotation * Math.PI / 180;
                 ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
                 
-                // Position bulb inside the left area of the scanner box
-                ctx.translate(rw * 0.15, 0); 
+                // Position bulb top-left inside the box
+                ctx.translate(rw * 0.08, rh * 0.15); 
                 
                 const bulbPath = new Path2D("M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z");
                 ctx.fillStyle = state.color;
@@ -1265,7 +1266,7 @@
                 ctx.globalAlpha = state.opacity;
                 if(state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
-                const scaleAmt = (rh * 0.4) / 24; 
+                const scaleAmt = (rh * 0.35) / 24; 
                 ctx.scale(scaleAmt, scaleAmt);
                 ctx.translate(-12, -12); 
                 ctx.fill(bulbPath);
@@ -1281,7 +1282,7 @@
                 
                 let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
                 
-                let rightPaddingOffset = state.cuMode ? (state.w/100*img.width) * 0.30 : 10;
+                let rightPaddingOffset = state.lntMode ? (state.w/100*img.width) * 0.28 : (state.cuMode ? (state.w/100*img.width) * 0.30 : 10);
                 
                 for (let char of text) { 
                     ctx.fillText(char, xc + (state.w/100*img.width) - rightPaddingOffset, (state.h/100*img.height)/2); 
@@ -1294,7 +1295,6 @@
             if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
             drawText(val, state.x, state.y, state.font, false);
             
-            // Draw Unit EXACTLY where user dragged it
             ctx.save();
             const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; 
             ctx.translate(ux, uy);
@@ -1347,8 +1347,8 @@
                     ctx.fillText("kW h", maxW - btmW, state.unitFont * 1.4);
                 }
             } else if (state.lntMode) {
-                // L&T Unit Export
-                ctx.font = `${state.fontWeight} ${state.unitFont * 1.1}px monospace`;
+                // L&T Export kW h text (with realistic gap)
+                ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
                 ctx.fillText("kW h", 0, 0);
             } else {
                 ctx.font = `${state.fontWeight} ${state.unitFont}px monospace`;
