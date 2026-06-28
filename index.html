@@ -238,7 +238,7 @@
 
     .md-icon {
       font-family: Arial, sans-serif;
-      font-weight: 900; /* Extra bold to match darkness */
+      font-weight: normal; 
       letter-spacing: 0px;
     }
 
@@ -903,7 +903,7 @@
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi3TR4YqdOC2XhYV8PLi7jFqUzg36c93G8gfrn4dLKEFcWOJnrODEAG7-yIPmCK4Yw1YSz8o8Y_DyodiEFL2kCcL6ctBUApOs5ccpM14RUmB9BNIcB1JnLWI831EsQYT7YRjqzrGkI_uH9RZL-3eM8cK8BeH2WCqoFxlcm_28His4mxjhPyLaSRjswR8jpJ/s320/1001154598.jpg",
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEge-ql0PO8tDiRLkPhx5y2gKTuDmRL_Dy5DlXkacExSggG1L8J420-5oCWCzo047lNkKfTnyH6ynucL5nTfZzp2qjHKNxmkF0wfvzFwAycodkqNrrQ6bl8SjD8t0sJVNh6znWGoYrsleIxhFVr4ucjS2g20Lg6ba54uNDUsSAWqEq_cABNQrbEYuIqQNj5o/s320/1001154601.jpg",
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEip4vGLRPYmILNONg8GpLjh-LaqZT4hcCxAbk_r9Xp0XhlumQdp0lMhjx9x_EpLG7tkZTU0lY6UZtyzlgLVf6nMiaemJt-NBSex2k3LQERXABC62q5H1KeAEeSkOc_sNzz2iFrUw5szIt-BYQGiKD06RUjVnlANfTowiq4pxKfTqeNbC-yhQQYuSB80kfr3/s320/1001154604.jpg",
-        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgW61WiR_NzqGXhSAnxGr_7GLa6Gc7Jqb4JhjLle9U-Y_y শকAnxGr_7GLa6Gc7Jqb4JhjLle9U-Y_yPuXdWTKt7s0XuOPBmnCWrWnypl55gXfpNLaRQr_H4y_L6jD7eQbNK7Q2CSQoJGhzt66Ci-zv39RWko9wR_HFBQufnKrFY7fD9_H4DoeBzJ4QIurYl6Ul8nM6ki4GsTskJVjXxT1RZvZKce48n/s320/1001154610.jpg",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgW61WiR_NzqGXhSAnxGr_7GLa6Gc7Jqb4JhjLle9U-Y_yPuXdWTKt7s0XuOPBmnCWrWnypl55gXfpNLaRQr_H4y_L6jD7eQbNK7Q2CSQoJGhzt66Ci-zv39RWko9wR_HFBQufnKrFY7fD9_H4DoeBzJ4QIurYl6Ul8nM6ki4GsTskJVjXxT1RZvZKce48n/s320/1001154610.jpg",
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiL2HFZfftA-kTn7CChdKVR9zSApRzS7w9uC1XZW5CPEcgfSWqobA75ExHP0oogrYMwtU_tA8T4OVshzeJUxyLkjZD8cYjfgS-FkauR8PqailrfucsxtfKArv4QjFbhY1UDwlXXIdEBwL_PQxOfKZvusxV4_eC-Cl6-ZUQ9LOZ4SWpAlKWMiLakEAdQHN-v/s320/1001154613.jpg",
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjT07Z7S2L9h0TYSuJl58PcsOGc_QctpmtPv3xlU9rMVolFth2yY_FttZ31m_o5ZBudH4XFTe6_xxNwo4eNByclmLIiXdCbnoEpiHuqEooOuFz6MjxAIZZUKz_R_0hpFU8-lczhPck1iYcad8HBriOMV3WyRomcbKzBZvXQwRHYPO852gQ-PMk1y_bmdN02/s320/1001154616.jpg",
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1J6qFLcbkks7YcFFA3KunMEcmP0Gb5oENX6JWzbCpMKT_f6ZIilZy5J9yPAlamAdFJo1LWc0ikRHnjnOJ8dqpJIKr6qCWQLc-fL5Kq2r14hIQswcb3-3-bgAQCGr-C21UjL82Q7IBGzaAbSafCFOfXHrZ8cvJ1MQ8FuO0sXxebcGr5L2bgKf6XyLM4juk/s320/1001154619.jpg"
@@ -915,15 +915,19 @@
               state.unitX = state.scanX + state.scanW - 18; 
               state.unitY = state.scanY + (state.scanH * 0.1);
           } else if (state.lntMode) {
+              // --- DYNAMIC SCANNER BOUNDARY MATH ---
               if (state.text.includes('.')) {
                   state.unitFont = Math.max(12, state.font * 0.35); 
                   
+                  // kW aligns middle-right inside current scanner box
                   state.unitX = state.scanX + state.scanW - 12; 
                   state.unitY = state.scanY + (state.scanH * 0.35); 
                   
+                  // MD aligns Top-Right strictly based on current scanner box
                   state.mdX = state.scanX + state.scanW - 8;
                   state.mdY = state.scanY + (state.scanH * 0.1); 
                   
+                  // 1 B aligns Bottom-Right strictly based on current scanner box
                   state.onebX = state.scanX + state.scanW - 10;
                   state.onebY = state.scanY + state.scanH - (state.scanH * 0.25); 
               } else {
@@ -932,6 +936,7 @@
                   state.unitY = state.scanY + (state.scanH * 0.22);
               }
               
+              // Bulb Auto Adjust to Top-Left inside current scanner box
               state.bulbX = state.scanX + (state.scanW * 0.08); 
               state.bulbY = state.scanY + (state.scanH * 0.20); 
           }
@@ -981,16 +986,16 @@
                 mdDisplay.style.display = 'block';
                 onebDisplay.style.display = 'flex'; 
                 
-                mdDisplay.style.fontSize = (state.unitFont * 0.75) + 'px';
+                mdDisplay.style.fontSize = (state.unitFont * 0.6) + 'px';
                 mdDisplay.style.left = state.mdX + '%';
                 mdDisplay.style.top = state.mdY + '%';
                 
                 onebDisplay.style.left = state.onebX + '%';
                 onebDisplay.style.top = state.onebY + '%';
                 
-                // TRUE REALISTIC 1B DESIGN: Big '1', Solid Black Block with 'B' inside
-                onebDisplay.innerHTML = `<span style="font-family:'DS-Digital', monospace; font-size:${state.unitFont * 1.2}px; margin-right: 4px; display: inline-block; transform: translateY(2px);">1</span>` + 
-                                        `<span style="font-family: Arial, sans-serif; font-size:${state.unitFont * 0.6}px; font-weight: 900; background-color: currentColor; color: #fff; padding: 2px 4px; display: inline-block; border-radius: 2px; vertical-align: bottom;">B</span>`;
+                // TIGHT 1B DESIGN: Big '1' and Solid Black 'B' Block
+                onebDisplay.innerHTML = `<span style="font-family:'DS-Digital', monospace; font-size:${state.unitFont * 1.1}px; margin-right: 2px; display: inline-block; transform: translateY(2px);">1</span>` + 
+                                        `<span style="font-family: sans-serif; font-size:${state.unitFont * 0.45}px; font-weight: bold; background-color: currentColor; color: #fff; padding: 1px 3px; display: inline-block; border-radius: 1px; vertical-align: bottom;">B</span>`;
                 
                 unitElem.innerHTML = `kW`;
             } else {
@@ -1029,7 +1034,7 @@
             unitElem.textContent = unitText;
         }
 
-        // Apply Opacity uniformly 
+        // Apply Opacity uniformly (MD no longer faded)
         [reading, unitElem, lntBulb, mdDisplay, onebDisplay].forEach(el => {
             if(el) {
                 el.style.color = state.color;
@@ -1170,6 +1175,7 @@
                       else { state.text = `${paddedNumber} kWh`; }
                   }
               }
+              // Immediately adjust components based on current scanner box layout
               autoAdjustSystem();
               applyState();
           };
@@ -1203,7 +1209,7 @@
         if(e.target === resizer || e.target === scannerResizer) return; 
         e.preventDefault(); 
         isDrag = true;
-        wrap.classList.add('is-dragging'); 
+        wrap.classList.add('is-dragging'); // Disable heavy filters during drag
 
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
@@ -1260,7 +1266,7 @@
 
         const stopHandler = () => { 
             isDrag = false; 
-            wrap.classList.remove('is-dragging'); 
+            wrap.classList.remove('is-dragging'); // Restore filters on drop
             window.removeEventListener('mousemove', moveHandler); 
             window.removeEventListener('mouseup', stopHandler); 
             window.removeEventListener('touchmove', moveHandler); 
@@ -1274,6 +1280,7 @@
         window.addEventListener('touchend', stopHandler);
       }
       
+      // Attach Drag Events
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, 'group'));
       readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, 'group'));
       
@@ -1292,6 +1299,7 @@
       onebDisplay.addEventListener('mousedown', (e) => startDrag(e, onebDisplay, 'oneb'));
       onebDisplay.addEventListener('touchstart', (e) => startDrag(e, onebDisplay, 'oneb'));
       
+      // Resize Logic (Also using RAF for smooth scaling)
       resizer.addEventListener('mousedown', (e) => initResize(e, 'group')); 
       resizer.addEventListener('touchstart', (e) => initResize(e, 'group'));
       
@@ -1404,6 +1412,7 @@
         img.onload = () => {
             const z = state.zoom; canvas.width = img.width * z; canvas.height = img.height * z; ctx.scale(z, z); ctx.drawImage(img, 0, 0);
             
+            // Scanner Box Export
             if(state.scannerMode) {
                 ctx.save(); ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; ctx.fillRect(0,0,img.width, img.height);
                 const rx = (state.scanX / 100) * img.width, ry = (state.scanY / 100) * img.height, rw = (state.scanW / 100) * img.width, rh = (state.scanH / 100) * img.height;
@@ -1413,6 +1422,7 @@
                 ctx.restore();
             }
 
+            // Bulb Export
             if (state.lntMode) {
                 ctx.save();
                 const bx = (state.bulbX / 100) * img.width;
@@ -1435,6 +1445,7 @@
                 ctx.restore();
             }
             
+            // Text Export Helper
             const drawText = (text, xPct, yPct, size, isGhost) => {
                 ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
                 const rad = state.rotation * Math.PI / 180; ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
@@ -1456,9 +1467,10 @@
             if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
             drawText(val, state.x, state.y, state.font, false);
             
+            // L&T DECIMAL MD & 1B Export 
             if(state.lntMode && val.includes('.')) {
                 
-                // MD Export (Thick, 100% Opacity)
+                // MD Export (100% Opacity)
                 ctx.save();
                 const mdx = (state.mdX / 100) * img.width, mdy = (state.mdY / 100) * img.height; 
                 ctx.translate(mdx, mdy);
@@ -1468,19 +1480,19 @@
                 ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
                 
-                ctx.font = `900 ${state.unitFont * 0.75}px Arial, sans-serif`;
+                ctx.font = `normal ${state.unitFont * 0.6}px Arial, sans-serif`;
                 ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                 ctx.fillText("MD", 0, 0);
                 ctx.restore();
 
-                // 1B Export (Clear Box Effect)
+                // 1B Export (True Layout)
                 ctx.save();
                 const obx = (state.onebX / 100) * img.width, oby = (state.onebY / 100) * img.height; 
                 ctx.translate(obx, oby);
                 ctx.rotate(state.rotation * Math.PI / 180); 
                 
-                let digitFont = `${state.fontWeight} ${state.unitFont * 1.2}px 'DS-Digital', monospace`;
-                let bFont = `900 ${state.unitFont * 0.6}px Arial, sans-serif`;
+                let digitFont = `${state.fontWeight} ${state.unitFont * 1.1}px 'DS-Digital', monospace`;
+                let bFont = `bold ${state.unitFont * 0.45}px sans-serif`;
                 
                 ctx.globalCompositeOperation = 'multiply'; 
                 ctx.globalAlpha = state.opacity; 
@@ -1494,9 +1506,9 @@
 
                 ctx.font = bFont;
                 let textB_W = ctx.measureText("B").width;
-                let padX = 4; let padY = 2;
+                let padX = 3; let padY = 2;
                 let boxW = textB_W + (padX * 2);
-                let boxH = state.unitFont * 0.8;
+                let boxH = state.unitFont * 0.6;
                 
                 let tCanvas = document.createElement('canvas');
                 tCanvas.width = boxW + 2; 
@@ -1511,10 +1523,11 @@
                 tCtx.textAlign = 'left'; tCtx.textBaseline = 'top';
                 tCtx.fillText("B", padX, padY);
 
-                ctx.drawImage(tCanvas, w1 + 4, state.unitFont * 0.4); 
+                ctx.drawImage(tCanvas, w1 + 4, state.unitFont * 0.5); 
                 ctx.restore();
             }
 
+            // Unit Export (kW or kWh)
             ctx.save();
             const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; 
             ctx.translate(ux, uy);
