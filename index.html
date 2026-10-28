@@ -19,6 +19,7 @@
       --moire-opacity: 0.1;
       --scanner-darkness: 0.7;
       --scanner-glow: 0.1;
+      --blend-mode: multiply; /* Blending Mode Variable */
     }
     body {
       display: flex;
@@ -102,35 +103,6 @@
       opacity: var(--moire-opacity);
       mix-blend-mode: multiply;
       z-index: 7;
-    }
-
-    /* --- TRANSPARENT PLASTIC CONTAINER / GLASS EFFECT --- */
-    .plastic-container-overlay {
-      position: absolute;
-      top: 15%;
-      left: 15%;
-      width: 70%;
-      height: 70%;
-      border: 3px solid rgba(255, 255, 255, 0.4);
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.08) 100%);
-      box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(0.5px);
-      pointer-events: none;
-      z-index: 85;
-      mix-blend-mode: overlay;
-    }
-    
-    .plastic-container-overlay::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 40%;
-      background: linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
-      border-top-left-radius: 10px;
-      border-top-right-radius: 10px;
     }
 
     /* CONTAINERS */
@@ -295,7 +267,7 @@
       z-index: 101;
     }
     
-    .merged { mix-blend-mode: multiply; }
+    .merged { mix-blend-mode: var(--blend-mode); }
     .noise-active { filter: url(#noiseFilter); }
     .camouflaged { filter: blur(0.6px); }
     .merged.noise-active.camouflaged { filter: url(#noiseFilter) blur(0.6px); }
@@ -345,7 +317,7 @@
       color: #bcd8c6; 
       flex: 1; 
     }
-    input, button { 
+    input, button, select { 
       font-size: 14px; 
       padding: 8px; 
       border-radius: 4px; 
@@ -552,9 +524,6 @@
       <div class="dirt-overlay"></div>
       <div class="glass-overlay"></div>
       <div class="moire-overlay"></div>
-      
-      <!-- Transparent Plastic Box Container Effect Added Here -->
-      <div class="plastic-container-overlay"></div>
 
       <div id="lntBulb" class="free-bulb merged camouflaged noise-active">
         <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor">
@@ -591,6 +560,25 @@
     <button id="panelMicBtn" class="mic-action-btn">🎤 Voice Control (ON/OFF)</button>
     <button id="masterResetBtn" class="danger">⚙️ Reset All Settings</button>
     
+    <!-- BLENDING MODE SELECTION PANEL (NEW ADDITION) -->
+    <div class="section-title">Photo Blending Options</div>
+    <div class="row">
+      <label>Blend Mode</label>
+      <select id="blendModeSelect">
+        <option value="multiply">Multiply (Darken / Best for White Background)</option>
+        <option value="screen">Screen (Lighten / Best for Glow/Neon/Black BG)</option>
+        <option value="overlay">Overlay (Contrast / Double Exposure)</option>
+        <option value="darken">Darken</option>
+        <option value="lighten">Lighten</option>
+        <option value="color-dodge">Color Dodge (Glowing)</option>
+        <option value="color-burn">Color Burn</option>
+        <option value="soft-light">Soft Light (Smooth)</option>
+        <option value="hard-light">Hard Light</option>
+        <option value="difference">Difference</option>
+        <option value="normal">Normal</option>
+      </select>
+    </div>
+
     <div class="section-title">Google Scanner Effect</div>
     <div class="row">
         <label>Scanner Mode</label>
@@ -896,6 +884,7 @@
       const scannerDarkRange = document.getElementById('scannerDarkRange');
       const scannerDarkValue = document.getElementById('scannerDarkValue');
       const lntBulb = document.getElementById('lntBulb');
+      const blendModeSelect = document.getElementById('blendModeSelect');
 
       const defaults = {
         x: 70, y: 45, w: 33, h: 9, 
@@ -910,7 +899,8 @@
         noise: true, ghost: true, flicker: true, zoom: 1,
         scannerMode: false, scannerDarkness: 0.7,
         cuMode: false,
-        lntMode: false 
+        lntMode: false,
+        blendMode: 'multiply'
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
@@ -925,6 +915,7 @@
       if(state.mdY === undefined) state.mdY = defaults.mdY;
       if(state.onebX === undefined) state.onebX = defaults.onebX;
       if(state.onebY === undefined) state.onebY = defaults.onebY;
+      if(state.blendMode === undefined) state.blendMode = defaults.blendMode;
 
       let memoryState = { unitFont: defaults.unitFont, unitX: defaults.unitX, unitY: defaults.unitY };
 
@@ -1071,6 +1062,7 @@
         document.documentElement.style.setProperty('--tilt-y', state.tiltY + 'deg');
         document.documentElement.style.setProperty('--zoom', state.zoom);
         document.documentElement.style.setProperty('--scanner-darkness', state.scannerDarkness);
+        document.documentElement.style.setProperty('--blend-mode', state.blendMode);
         
         display.style.fontSize = state.font + 'px';
         ghostDisplay.style.fontSize = state.font + 'px';
@@ -1121,10 +1113,12 @@
         noiseBtn.textContent = state.noise ? 'Noise: ON' : 'Noise: OFF';
         ghostBtn.textContent = state.ghost ? 'Ghost: ON' : 'Ghost: OFF';
         flickerBtn.textContent = state.flicker ? 'Flicker: ON' : 'Flicker: OFF';
+        blendModeSelect.value = state.blendMode;
         
         localStorage.setItem('finalVoiceMeterState', JSON.stringify(state));
       }
 
+      // VOICE RECOGNITION 
       if ('webkitSpeechRecognition' in window) {
           const recognition = new webkitSpeechRecognition();
           recognition.continuous = true;
@@ -1220,6 +1214,7 @@
           });
       }
       
+      // SUPER SMOOTH DRAG & RESIZE SYSTEM (RAF + Filter Toggle)
       let isDrag = false, startX, startY, startLeft, startTop, ticking = false;
       
       function startDrag(e, el, targetType) {
@@ -1408,6 +1403,7 @@
       });
       
       scannerDarkRange.addEventListener('input', () => { state.scannerDarkness = +scannerDarkRange.value; applyState(); });
+      blendModeSelect.addEventListener('change', () => { state.blendMode = blendModeSelect.value; applyState(); });
 
       const gallery = document.getElementById('imageGallery');
       function loadGallery() {
@@ -1446,7 +1442,7 @@
                 
                 const bulbPath = new Path2D("M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z");
                 ctx.fillStyle = state.color;
-                ctx.globalCompositeOperation = 'multiply';
+                ctx.globalCompositeOperation = state.blendMode;
                 ctx.globalAlpha = state.opacity;
                 if(state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
@@ -1462,7 +1458,7 @@
                 ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
                 const rad = state.rotation * Math.PI / 180; ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
                 ctx.font = `${state.fontWeight} ${size}px 'DS-Digital', monospace`; ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; 
-                ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = isGhost ? 0.08 : state.opacity; ctx.fillStyle = state.color;
+                ctx.globalCompositeOperation = state.blendMode; ctx.globalAlpha = isGhost ? 0.08 : state.opacity; ctx.fillStyle = state.color;
                 if (state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
                 let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
@@ -1484,7 +1480,7 @@
                 const mdx = (state.mdX / 100) * img.width, mdy = (state.mdY / 100) * img.height; 
                 ctx.translate(mdx, mdy);
                 ctx.rotate(state.rotation * Math.PI / 180); 
-                ctx.globalCompositeOperation = 'multiply'; 
+                ctx.globalCompositeOperation = state.blendMode; 
                 ctx.globalAlpha = state.opacity; 
                 ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
@@ -1502,7 +1498,7 @@
                 let digitFont = `${state.fontWeight} ${state.unitFont * 1.1}px 'DS-Digital', monospace`;
                 let bFont = `bold ${state.unitFont * 0.45}px sans-serif`;
                 
-                ctx.globalCompositeOperation = 'multiply'; 
+                ctx.globalCompositeOperation = state.blendMode; 
                 ctx.globalAlpha = state.opacity; 
                 ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
@@ -1539,7 +1535,7 @@
             const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; 
             ctx.translate(ux, uy);
             ctx.rotate(state.rotation * Math.PI / 180); 
-            ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
+            ctx.globalCompositeOperation = state.blendMode; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
             if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
             
             if (state.cuMode) {
