@@ -19,7 +19,7 @@
       --moire-opacity: 0.1;
       --scanner-darkness: 0.7;
       --scanner-glow: 0.1;
-      --blend-mode: multiply; /* Blending Mode Variable */
+      --blend-mode: multiply; /* Added for text blending */
     }
     body {
       display: flex;
@@ -267,7 +267,7 @@
       z-index: 101;
     }
     
-    .merged { mix-blend-mode: var(--blend-mode); }
+    .merged { mix-blend-mode: var(--blend-mode); } /* Updated for dynamic blending */
     .noise-active { filter: url(#noiseFilter); }
     .camouflaged { filter: blur(0.6px); }
     .merged.noise-active.camouflaged { filter: url(#noiseFilter) blur(0.6px); }
@@ -560,25 +560,25 @@
     <button id="panelMicBtn" class="mic-action-btn">🎤 Voice Control (ON/OFF)</button>
     <button id="masterResetBtn" class="danger">⚙️ Reset All Settings</button>
     
-    <!-- BLENDING MODE SELECTION PANEL (NEW ADDITION) -->
+    <!-- ADDED BLEND MODE SECTION HERE -->
     <div class="section-title">Photo Blending Options</div>
     <div class="row">
-      <label>Blend Mode</label>
-      <select id="blendModeSelect">
-        <option value="multiply">Multiply (Darken / Best for White Background)</option>
-        <option value="screen">Screen (Lighten / Best for Glow/Neon/Black BG)</option>
-        <option value="overlay">Overlay (Contrast / Double Exposure)</option>
+      <label>Text Blend Mode</label>
+      <select id="blendModeSelect" style="flex:2; font-size:13px;">
+        <option value="multiply">Multiply (Darken)</option>
+        <option value="screen">Screen (Lighten)</option>
+        <option value="overlay">Overlay (Contrast)</option>
         <option value="darken">Darken</option>
         <option value="lighten">Lighten</option>
-        <option value="color-dodge">Color Dodge (Glowing)</option>
+        <option value="color-dodge">Color Dodge</option>
         <option value="color-burn">Color Burn</option>
-        <option value="soft-light">Soft Light (Smooth)</option>
+        <option value="soft-light">Soft Light</option>
         <option value="hard-light">Hard Light</option>
         <option value="difference">Difference</option>
         <option value="normal">Normal</option>
       </select>
     </div>
-
+    
     <div class="section-title">Google Scanner Effect</div>
     <div class="row">
         <label>Scanner Mode</label>
@@ -884,7 +884,7 @@
       const scannerDarkRange = document.getElementById('scannerDarkRange');
       const scannerDarkValue = document.getElementById('scannerDarkValue');
       const lntBulb = document.getElementById('lntBulb');
-      const blendModeSelect = document.getElementById('blendModeSelect');
+      const blendModeSelect = document.getElementById('blendModeSelect'); // ADDED
 
       const defaults = {
         x: 70, y: 45, w: 33, h: 9, 
@@ -900,7 +900,7 @@
         scannerMode: false, scannerDarkness: 0.7,
         cuMode: false,
         lntMode: false,
-        blendMode: 'multiply'
+        blendMode: 'multiply' // ADDED
       };
 
       let state = JSON.parse(localStorage.getItem('finalVoiceMeterState')) || {...defaults};
@@ -915,7 +915,7 @@
       if(state.mdY === undefined) state.mdY = defaults.mdY;
       if(state.onebX === undefined) state.onebX = defaults.onebX;
       if(state.onebY === undefined) state.onebY = defaults.onebY;
-      if(state.blendMode === undefined) state.blendMode = defaults.blendMode;
+      if(state.blendMode === undefined) state.blendMode = defaults.blendMode; // ADDED
 
       let memoryState = { unitFont: defaults.unitFont, unitX: defaults.unitX, unitY: defaults.unitY };
 
@@ -938,12 +938,19 @@
               state.unitX = state.scanX + state.scanW - 18; 
               state.unitY = state.scanY + (state.scanH * 0.1);
           } else if (state.lntMode) {
+              // --- DYNAMIC SCANNER BOUNDARY MATH ---
               if (state.text.includes('.')) {
                   state.unitFont = Math.max(12, state.font * 0.35); 
+                  
+                  // kW aligns middle-right inside current scanner box
                   state.unitX = state.scanX + state.scanW - 12; 
                   state.unitY = state.scanY + (state.scanH * 0.35); 
+                  
+                  // MD aligns Top-Right strictly based on current scanner box
                   state.mdX = state.scanX + state.scanW - 8;
                   state.mdY = state.scanY + (state.scanH * 0.1); 
+                  
+                  // 1 B aligns Bottom-Right strictly based on current scanner box
                   state.onebX = state.scanX + state.scanW - 10;
                   state.onebY = state.scanY + state.scanH - (state.scanH * 0.25); 
               } else {
@@ -951,6 +958,8 @@
                   state.unitX = state.scanX + state.scanW - 18; 
                   state.unitY = state.scanY + (state.scanH * 0.22);
               }
+              
+              // Bulb Auto Adjust to Top-Left inside current scanner box
               state.bulbX = state.scanX + (state.scanW * 0.08); 
               state.bulbY = state.scanY + (state.scanH * 0.20); 
           }
@@ -996,6 +1005,7 @@
             reading.style.paddingRight = '25%'; 
             
             if (valText.includes('.')) {
+                // DECIMAL LAYOUT
                 mdDisplay.style.display = 'block';
                 onebDisplay.style.display = 'flex'; 
                 
@@ -1006,6 +1016,7 @@
                 onebDisplay.style.left = state.onebX + '%';
                 onebDisplay.style.top = state.onebY + '%';
                 
+                // TIGHT 1B DESIGN: Big '1' and Solid Black 'B' Block
                 onebDisplay.innerHTML = `<span style="font-family:'DS-Digital', monospace; font-size:${state.unitFont * 1.1}px; margin-right: 2px; display: inline-block; transform: translateY(2px);">1</span>` + 
                                         `<span style="font-family: sans-serif; font-size:${state.unitFont * 0.45}px; font-weight: bold; background-color: currentColor; color: #fff; padding: 1px 3px; display: inline-block; border-radius: 1px; vertical-align: bottom;">B</span>`;
                 
@@ -1046,6 +1057,7 @@
             unitElem.textContent = unitText;
         }
 
+        // Apply Opacity uniformly (MD no longer faded)
         [reading, unitElem, lntBulb, mdDisplay, onebDisplay].forEach(el => {
             if(el) {
                 el.style.color = state.color;
@@ -1062,6 +1074,8 @@
         document.documentElement.style.setProperty('--tilt-y', state.tiltY + 'deg');
         document.documentElement.style.setProperty('--zoom', state.zoom);
         document.documentElement.style.setProperty('--scanner-darkness', state.scannerDarkness);
+        
+        // ADDED - Dynamically set blend mode CSS variable for live view
         document.documentElement.style.setProperty('--blend-mode', state.blendMode);
         
         display.style.fontSize = state.font + 'px';
@@ -1113,7 +1127,8 @@
         noiseBtn.textContent = state.noise ? 'Noise: ON' : 'Noise: OFF';
         ghostBtn.textContent = state.ghost ? 'Ghost: ON' : 'Ghost: OFF';
         flickerBtn.textContent = state.flicker ? 'Flicker: ON' : 'Flicker: OFF';
-        blendModeSelect.value = state.blendMode;
+        
+        blendModeSelect.value = state.blendMode; // ADDED
         
         localStorage.setItem('finalVoiceMeterState', JSON.stringify(state));
       }
@@ -1188,6 +1203,7 @@
                       else { state.text = `${paddedNumber} kWh`; }
                   }
               }
+              // Immediately adjust components based on current scanner box layout
               autoAdjustSystem();
               applyState();
           };
@@ -1221,7 +1237,7 @@
         if(e.target === resizer || e.target === scannerResizer) return; 
         e.preventDefault(); 
         isDrag = true;
-        wrap.classList.add('is-dragging');
+        wrap.classList.add('is-dragging'); // Disable heavy filters during drag
 
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
@@ -1278,7 +1294,7 @@
 
         const stopHandler = () => { 
             isDrag = false; 
-            wrap.classList.remove('is-dragging');
+            wrap.classList.remove('is-dragging'); // Restore filters on drop
             window.removeEventListener('mousemove', moveHandler); 
             window.removeEventListener('mouseup', stopHandler); 
             window.removeEventListener('touchmove', moveHandler); 
@@ -1292,6 +1308,7 @@
         window.addEventListener('touchend', stopHandler);
       }
       
+      // Attach Drag Events
       readingGroup.addEventListener('mousedown', (e) => startDrag(e, readingGroup, 'group'));
       readingGroup.addEventListener('touchstart', (e) => startDrag(e, readingGroup, 'group'));
       
@@ -1310,6 +1327,7 @@
       onebDisplay.addEventListener('mousedown', (e) => startDrag(e, onebDisplay, 'oneb'));
       onebDisplay.addEventListener('touchstart', (e) => startDrag(e, onebDisplay, 'oneb'));
       
+      // Resize Logic (Also using RAF for smooth scaling)
       resizer.addEventListener('mousedown', (e) => initResize(e, 'group')); 
       resizer.addEventListener('touchstart', (e) => initResize(e, 'group'));
       
@@ -1403,7 +1421,7 @@
       });
       
       scannerDarkRange.addEventListener('input', () => { state.scannerDarkness = +scannerDarkRange.value; applyState(); });
-      blendModeSelect.addEventListener('change', () => { state.blendMode = blendModeSelect.value; applyState(); });
+      blendModeSelect.addEventListener('change', () => { state.blendMode = blendModeSelect.value; applyState(); }); // ADDED
 
       const gallery = document.getElementById('imageGallery');
       function loadGallery() {
@@ -1423,6 +1441,7 @@
         img.onload = () => {
             const z = state.zoom; canvas.width = img.width * z; canvas.height = img.height * z; ctx.scale(z, z); ctx.drawImage(img, 0, 0);
             
+            // Scanner Box Export
             if(state.scannerMode) {
                 ctx.save(); ctx.fillStyle = `rgba(0,0,0,${state.scannerDarkness})`; ctx.fillRect(0,0,img.width, img.height);
                 const rx = (state.scanX / 100) * img.width, ry = (state.scanY / 100) * img.height, rw = (state.scanW / 100) * img.width, rh = (state.scanH / 100) * img.height;
@@ -1432,6 +1451,7 @@
                 ctx.restore();
             }
 
+            // Bulb Export
             if (state.lntMode) {
                 ctx.save();
                 const bx = (state.bulbX / 100) * img.width;
@@ -1442,7 +1462,7 @@
                 
                 const bulbPath = new Path2D("M9 21h6v-1H9v1zm3-19C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z");
                 ctx.fillStyle = state.color;
-                ctx.globalCompositeOperation = state.blendMode;
+                ctx.globalCompositeOperation = state.blendMode; // UPDATED
                 ctx.globalAlpha = state.opacity;
                 if(state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
@@ -1454,11 +1474,13 @@
                 ctx.restore();
             }
             
+            // Text Export Helper
             const drawText = (text, xPct, yPct, size, isGhost) => {
                 ctx.save(); const tx = (xPct / 100) * img.width, ty = (yPct / 100) * img.height; ctx.translate(tx, ty);
                 const rad = state.rotation * Math.PI / 180; ctx.transform(Math.cos(rad), Math.sin(rad) + (state.tiltY/200), -Math.sin(rad) + (state.tiltX/200), Math.cos(rad), 0, 0);
                 ctx.font = `${state.fontWeight} ${size}px 'DS-Digital', monospace`; ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; 
-                ctx.globalCompositeOperation = state.blendMode; ctx.globalAlpha = isGhost ? 0.08 : state.opacity; ctx.fillStyle = state.color;
+                ctx.globalCompositeOperation = state.blendMode; // UPDATED
+                ctx.globalAlpha = isGhost ? 0.08 : state.opacity; ctx.fillStyle = state.color;
                 if (state.edgeBlur > 0 && ctx.filter) ctx.filter = `blur(${state.edgeBlur}px)`;
                 
                 let tw = 0; for(let c of text) tw += ctx.measureText(c).width; let xc = -tw;
@@ -1475,12 +1497,15 @@
             if(state.ghost) { drawText(val.replace(/[0-9.]/g, '8'), state.x, state.y, state.font, true); }
             drawText(val, state.x, state.y, state.font, false);
             
+            // L&T DECIMAL MD & 1B Export 
             if(state.lntMode && val.includes('.')) {
+                
+                // MD Export
                 ctx.save();
                 const mdx = (state.mdX / 100) * img.width, mdy = (state.mdY / 100) * img.height; 
                 ctx.translate(mdx, mdy);
                 ctx.rotate(state.rotation * Math.PI / 180); 
-                ctx.globalCompositeOperation = state.blendMode; 
+                ctx.globalCompositeOperation = state.blendMode; // UPDATED 
                 ctx.globalAlpha = state.opacity; 
                 ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
@@ -1490,6 +1515,7 @@
                 ctx.fillText("MD", 0, 0);
                 ctx.restore();
 
+                // 1B Export (True Layout)
                 ctx.save();
                 const obx = (state.onebX / 100) * img.width, oby = (state.onebY / 100) * img.height; 
                 ctx.translate(obx, oby);
@@ -1498,7 +1524,7 @@
                 let digitFont = `${state.fontWeight} ${state.unitFont * 1.1}px 'DS-Digital', monospace`;
                 let bFont = `bold ${state.unitFont * 0.45}px sans-serif`;
                 
-                ctx.globalCompositeOperation = state.blendMode; 
+                ctx.globalCompositeOperation = state.blendMode; // UPDATED 
                 ctx.globalAlpha = state.opacity; 
                 ctx.fillStyle = state.color;
                 if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
@@ -1531,11 +1557,13 @@
                 ctx.restore();
             }
 
+            // Unit Export (kW or kWh)
             ctx.save();
             const ux = (state.unitX / 100) * img.width, uy = (state.unitY / 100) * img.height; 
             ctx.translate(ux, uy);
             ctx.rotate(state.rotation * Math.PI / 180); 
-            ctx.globalCompositeOperation = state.blendMode; ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
+            ctx.globalCompositeOperation = state.blendMode; // UPDATED
+            ctx.globalAlpha = state.opacity; ctx.fillStyle = state.color;
             if(state.edgeBlur > 0) ctx.filter = `blur(${state.edgeBlur}px)`; 
             
             if (state.cuMode) {
